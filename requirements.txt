@@ -1,0 +1,14 @@
+# Analytiq AI – Project Requirements
+
+Node.js >= 22.x
+npm >= 10.x
+
+next
+react
+react-dom
+typescript
+tailwindcss
+@tailwindcss/postcss
+@types/node
+@types/react
+@types/react-dom

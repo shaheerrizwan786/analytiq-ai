@@ -34,4 +34,4 @@ DATABASE_URL=
 
 ---
 
-> **Note:** This commit only sets up the project structure. No application logic has been implemented yet.
+> **_** 
