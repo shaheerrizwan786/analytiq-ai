@@ -1,0 +1,1 @@
+"""Analytiq AI FastAPI backend."""

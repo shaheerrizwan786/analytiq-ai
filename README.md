@@ -7,9 +7,9 @@ AI-powered restaurant feedback intelligence platform.
 ## Project Structure
 
 ```
-analytiq-ai/
-├── frontend/   → frontend application (to be added)
-├── backend/    → API and processing (to be added)
+DTE505/
+├── frontend/   → Next.js (App Router)
+├── backend/    → FastAPI (orchestration, Apify/DB/LLM)
 ├── docs/       → documentation
 ```
 
@@ -22,15 +22,22 @@ analytiq-ai/
 
 ### Environment Variables
 
-Create a `.env.local` file at the root and copy the contents of `.env.example`:
+Create a `.env.local` file at the **repository root** and copy from `.env.example`.  
+Both **Next.js** and **FastAPI** read the same file (backend uses `pydantic-settings` paths to repo root).
 
+### Backend (FastAPI)
+
+See `backend/README.md`. Quick start:
+
+```bash
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1   # Windows PowerShell
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
-CLAUDE_API_KEY=
-GOOGLE_API_KEY=
-YELP_API_KEY=
-APIFY_API_KEY=
-DATABASE_URL=
-```
+
+API docs: http://localhost:8000/docs
 
 ---
 
