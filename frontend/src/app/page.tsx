@@ -5,19 +5,33 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import AppShell from '@/components/layout/AppShell';
+import DashboardView from '@/components/dashboard/DashboardView';
+import { mockData } from '@/lib/mockData';
 
 export default function Home() {
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
 
   const canSubmit = name.trim().length > 0 && location.trim().length > 0;
 
   function handleSubmit() {
     if (!canSubmit) return;
     setIsLoading(true);
-    // backend integration will go here
-    setTimeout(() => setIsLoading(false), 2000);
+    setTimeout(() => {
+      setIsLoading(false);
+      setShowDashboard(true);
+    }, 1000);
+  }
+
+  if (showDashboard) {
+    const data = {
+      ...mockData,
+      restaurantName: name,
+      location: location,
+    };
+    return <DashboardView data={data} />;
   }
 
   return (
