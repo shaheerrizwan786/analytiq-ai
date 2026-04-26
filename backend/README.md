@@ -1,6 +1,6 @@
 # Analytiq AI — FastAPI backend
 
-Orchestration service (Apify → normalise → PostgreSQL → LLM) lives here. Keys stay **server-side** only; read from the **repo root** `.env.local` / `.env` (same as frontend setup).
+Orchestration service (Apify → normalise → incremental persistence → LLM) lives here. Keys stay **server-side** only; read from the **repo root** `.env.local` / `.env` (same as frontend setup).
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ python -m venv .venv
 
 Activate:
 
-- Windows (PowerShell): `.\.venv\Scripts\Activate.ps1`
+- Windows (PowerShell): `\.\.venv\Scripts\Activate.ps1`
 - macOS/Linux: `source .venv/bin/activate`
 
 Install:
@@ -61,9 +61,14 @@ Then `POST ${NEXT_PUBLIC_API_BASE_URL}/api/v1/restaurants/analyze` with JSON `{ 
 
 ## Apify (Google Maps reviews)
 
-`POST /api/v1/restaurants/analyze` runs the **Google Maps** Apify actor, normalises reviews, and fills `insights.sources.google` plus rough sentiment from star ratings (issues/recommendations stay placeholder until the LLM step).
+`POST /api/v1/restaurants/analyze` runs the **Google Maps** Apify actor and now supports incremental extraction:
 
-**Cost:** defaults are intentionally small (`APIFY_MAX_REVIEWS=8`, one place per search) to reduce Apify usage. Increase only when you need more signal for demos or LLM input.
+1. Reads the latest extracted review date for `(source=google, restaurant_name, location)` from local SQLite.
+2. Requests latest reviews from Apify (tries date filter field first, auto-fallback if actor rejects it).
+3. Persists only unseen reviews (dedupe by stable `review_key`) in SQLite.
+4. Updates extracted date range.
+
+**Cost control:** defaults are intentionally small (`APIFY_MAX_REVIEWS=8`, one place per search) to reduce Apify usage. Increase only when needed.
 
 **Required in repo root `.env.local`:**
 
@@ -76,16 +81,28 @@ APIFY_API_KEY=apify_api_...
 | Variable | Default | Meaning |
 |----------|---------|---------|
 | `APIFY_GOOGLE_ACTOR_ID` | `compass/crawler-google-places` | Actor to run (must match input schema or change code). |
-| `APIFY_MAX_REVIEWS` | `8` | Max reviews requested from the actor and kept after normalisation (main cost knob). |
-| `APIFY_WAIT_SECS` | `900` | Max wait for the run to finish (seconds). |
+| `APIFY_MAX_REVIEWS` | `8` | Max reviews requested from actor and kept after filtering (main cost knob). |
+| `APIFY_WAIT_SECS` | `900` | Max wait for run to finish (seconds). |
+| `APIFY_TRY_DATE_FILTER` | `true` | Try passing a date field to actor input for incremental sync. |
+| `APIFY_GOOGLE_REVIEW_START_DATE_FIELD` | `reviewsStartDate` | Actor input field name used when date filtering is enabled. |
 
-Subscribe to / pay for the actor in [Apify Console](https://console.apify.com/) (runs consume credits). The response includes `apify_dataset_url` so you can inspect rows in Apify Storage.
+Local incremental sync DB path:
+
+```text
+backend/data/reviews_sync.sqlite3
+```
+
+Response now includes:
+
+- `new_reviews_count`
+- `extracted_range_from`
+- `extracted_range_to`
 
 If `APIFY_API_KEY` is missing, the endpoint returns **503** with a clear message.
 
 ## Next implementation steps
 
-1. **LLM**: map `GoogleReviewNormalized` text + ratings into `top_issues` / `recommendations` via Claude (see `CLAUDE_API_KEY`).
-2. **Persistence**: add `sqlalchemy` + `psycopg[binary]`, models + migrations; use `DATABASE_URL`.
-3. **More sources**: additional Apify actors for Yelp / TripAdvisor + normalisers (extend `SourceCounts`).
+1. **LLM**: map normalized review text + ratings into `top_issues` / `recommendations` via Claude.
+2. **Primary DB**: port local SQLite sync tables to PostgreSQL/Supabase for shared team environment.
+3. **More sources**: add Yelp / TripAdvisor services with the same incremental sync contract.
 4. **Chat**: e.g. `POST /api/v1/chat` with insights JSON as context.

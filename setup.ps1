@@ -10,4 +10,5 @@ npm install
 Set-Location ..
 
 Write-Host ""
-Write-Host "Done. Run 'cd frontend && npm run dev' to start." -ForegroundColor Green
+Write-Host "Done. Frontend: cd frontend && npm run dev  (http://localhost:3000)" -ForegroundColor Green
+Write-Host "Backend:   see backend/README.md  (uvicorn on http://localhost:8000)" -ForegroundColor Green

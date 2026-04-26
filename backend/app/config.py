@@ -22,12 +22,21 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     database_url: str | None = None
     apify_api_key: str | None = None
-    # Default: compass/crawler-google-places (Google Maps; needs Apify subscription & actor access)
+
+    # Review actors
     apify_google_actor_id: str = "compass/crawler-google-places"
-    # Keep low by default to limit Apify actor cost (raise via APIFY_MAX_REVIEWS in .env.local).
-    apify_max_reviews: int = Field(default=8, ge=1, le=5000)
-    # Max time to wait for actor run (seconds); Google Maps runs can be slow
+    apify_yelp_actor_id: str = "voyager/yelp-review-scraper"
+    apify_tripadvisor_actor_id: str = "maxcopell/tripadvisor-reviews"
+
+    # Discovery actors (resolve URL from name + location)
+    apify_yelp_discovery_actor_id: str = "tri_angle/yelp-scraper"
+    apify_yelp_discovery_search_limit: int = Field(default=3, ge=1, le=20)
+    apify_tripadvisor_discovery_actor_id: str = "maxcopell/tripadvisor"
+
+    # Total review budget per request (split across 3 sources)
+    apify_max_reviews: int = Field(default=9, ge=3, le=5000)
     apify_wait_secs: int = 900
+
     google_api_key: str | None = None
     yelp_api_key: str | None = None
     claude_api_key: str | None = None

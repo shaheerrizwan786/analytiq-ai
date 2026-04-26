@@ -37,5 +37,17 @@ class AnalyzeResponse(BaseModel):
     )
     apify_dataset_url: str | None = Field(
         default=None,
-        description="Apify Console dataset URL for this run (debugging; no secrets).",
+        description="Apify Console dataset URL(s) for this run (debugging; no secrets).",
+    )
+    extracted_range_from: str | None = Field(
+        default=None,
+        description="Incremental lower bound used for this extraction window (ISO UTC).",
+    )
+    extracted_range_to: str | None = Field(
+        default=None,
+        description="Latest review timestamp persisted after this extraction (ISO UTC).",
+    )
+    new_reviews_count: int = Field(
+        default=0,
+        description="Count of newly persisted reviews in this run.",
     )
