@@ -64,16 +64,24 @@ export default function DashboardView({ data }: DashboardViewProps) {
         />
 
         {/* Tab nav */}
-        <div className="flex gap-1 border-b border-gray-200">
+        <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 text-sm font-medium ${activeTab === 'overview' ? 'border-b-2 border-gray-900 text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'overview'
+                ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
           >
             Overview
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
-            className={`px-4 py-2 text-sm font-medium ${activeTab === 'reviews' ? 'border-b-2 border-gray-900 text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'reviews'
+                ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
           >
             Reviews{data.reviews.length > 0 ? ` (${data.reviews.length})` : ''}
           </button>

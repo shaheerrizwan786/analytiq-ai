@@ -24,9 +24,11 @@ export default function Card({
     <div
       onClick={onClick}
       className={[
-        'bg-white border border-gray-100 rounded-2xl shadow-sm',
+        'bg-white dark:bg-[#13131F] border border-gray-100 dark:border-[#1E1E2E] rounded-2xl shadow-sm dark:shadow-violet-950/20',
         paddingStyles[padding],
-        onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : '',
+        onClick
+          ? 'cursor-pointer hover:shadow-lg hover:shadow-violet-100 dark:hover:shadow-violet-950/30 hover:scale-[1.01] transition-all duration-200'
+          : 'transition-shadow duration-200',
         className,
       ]
         .filter(Boolean)

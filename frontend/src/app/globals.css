@@ -1,8 +1,21 @@
 @import "tailwindcss";
 
+/* Class-based dark mode for Tailwind v4 */
+@variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --brand-from: #6C35E0;
+  --brand-to: #22D3EE;
+  --cta: #F97316;
+  --card-dark: #13131F;
+  --card-border-dark: #1E1E2E;
+}
+
+.dark {
+  --background: #0C0C18;
+  --foreground: #f1f5f9;
 }
 
 @theme inline {
@@ -12,15 +25,23 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+@keyframes float-blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+.animate-float-blob {
+  animation: float-blob 12s ease-in-out infinite;
+}
+
+.animate-float-blob-delay {
+  animation: float-blob 16s ease-in-out infinite reverse;
 }

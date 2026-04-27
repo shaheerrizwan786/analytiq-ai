@@ -146,19 +146,15 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
             source_stats.append("yelp(skipped:no_resolved_url)")
             continue
 
-        since = sync_store.get_last_review_date(
-            source=source,
-            restaurant_name=body.name,
-            restaurant_location=body.location,
-        )
-
+        # Always fetch the latest N reviews (no since filter).
+        # Deduplication in the store via review_key prevents double-counting.
         try:
             reviews, dataset_url, stats = fetch_reviews_for_source(
                 settings,
                 source=source,
                 restaurant_name=body.name.strip(),
                 restaurant_location=body.location.strip(),
-                since=since,
+                since=None,
                 tripadvisor_url=resolved_tripadvisor_url,
                 yelp_url=resolved_yelp_url,
             )

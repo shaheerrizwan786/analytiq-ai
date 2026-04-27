@@ -22,15 +22,15 @@ const PLATFORM_LABELS: Record<Review['platform'], string> = {
 };
 
 const PLATFORM_COLORS: Record<Review['platform'], string> = {
-  google: 'bg-blue-100 text-blue-800',
-  tripadvisor: 'bg-green-100 text-green-800',
-  yelp: 'bg-red-100 text-red-800',
+  google: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300',
+  tripadvisor: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-300',
+  yelp: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300',
 };
 
 const SENTIMENT_COLORS: Record<Review['sentiment'], string> = {
-  positive: 'bg-emerald-100 text-emerald-800',
-  neutral: 'bg-gray-100 text-gray-700',
-  negative: 'bg-rose-100 text-rose-800',
+  positive: 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300',
+  neutral: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
+  negative: 'bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300',
 };
 
 function StarRating({ rating }: { rating: number | null }) {
@@ -104,7 +104,11 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setSourceFilter('all')}
-            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+              sourceFilter === 'all'
+                ? 'bg-violet-600 text-white border-violet-600'
+                : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'
+            }`}
           >
             All sources
           </button>
@@ -112,7 +116,11 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
             <button
               key={src}
               onClick={() => setSourceFilter(src)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === src ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                sourceFilter === src
+                  ? 'bg-violet-600 text-white border-violet-600'
+                  : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'
+              }`}
             >
               {PLATFORM_LABELS[src]} {sourceCounts[src] > 0 && `(${sourceCounts[src]})`}
             </button>
@@ -127,7 +135,11 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
             <button
               key={s}
               onClick={() => setSentimentFilter(s)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sentimentFilter === s ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                sentimentFilter === s
+                  ? 'bg-violet-600 text-white border-violet-600'
+                  : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'
+              }`}
             >
               {s === 'all' ? 'All sentiment' : s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
@@ -138,7 +150,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as typeof sortOrder)}
-            className="text-xs border border-gray-200 rounded-md px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className="text-xs border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1.5 bg-white dark:bg-[#13131F] text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-violet-500"
           >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
@@ -149,16 +161,16 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
       </div>
 
       {/* Summary */}
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-gray-500 dark:text-gray-400">
         Showing {filtered.length} of {reviews.length} review{reviews.length !== 1 ? 's' : ''}
       </p>
 
       {/* Review cards */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 space-y-2">
-          <p className="text-gray-500 text-sm">No reviews match the current filters.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">No reviews match the current filters.</p>
           {isFiltered && (
-            <button onClick={resetFilters} className="text-sm text-gray-700 underline hover:text-gray-900">
+            <button onClick={resetFilters} className="text-sm text-violet-600 dark:text-violet-400 underline hover:text-violet-800">
               Reset filters
             </button>
           )}
@@ -166,7 +178,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
       ) : (
         <div className="space-y-3">
           {filtered.map((review) => (
-            <div key={review.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm space-y-2">
+            <div key={review.id} className="bg-white dark:bg-[#13131F] border border-gray-100 dark:border-[#1E1E2E] rounded-xl p-4 shadow-sm space-y-2">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PLATFORM_COLORS[review.platform]}`}>
@@ -176,12 +188,12 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
                     {review.sentiment.charAt(0).toUpperCase() + review.sentiment.slice(1)}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-400">
+                <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
                   <StarRating rating={review.rating} />
                   {review.date_iso && <span>{formatDate(review.date_iso)}</span>}
                 </div>
               </div>
-              <p className="text-sm text-gray-700 leading-relaxed">{review.text}</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{review.text}</p>
             </div>
           ))}
         </div>

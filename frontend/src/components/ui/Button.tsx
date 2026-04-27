@@ -13,9 +13,9 @@ interface ButtonProps {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-gray-900 text-white hover:bg-gray-700',
-  secondary: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50',
-  ghost: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+  primary: 'bg-orange-500 text-white hover:bg-orange-600',
+  secondary: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700',
+  ghost: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
