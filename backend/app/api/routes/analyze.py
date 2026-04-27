@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, HTTPException
 
 from app.config import get_settings
-from app.schemas import AnalyzeRequest, AnalyzeResponse
+from app.schemas import AnalyzeRequest, AnalyzeResponse, ReviewItem
 from app.services.apify_reviews_multi import ApifyReviewsError, fetch_reviews_for_source
 from app.services.insights_stub import stub_insights_from_reviews
 from app.services.review_sync_store import create_default_sync_store, reset_all
@@ -90,51 +90,58 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
                 source_errors.append(f"tripadvisor-discovery: {str(e)}")
 
     # Resolve Yelp URL (cache -> search -> discovery fallback)
-    resolved_yelp_url = sync_store.get_source_place_link(
-        source="yelp",
-        restaurant_name=body.name,
-        restaurant_location=body.location,
-    )
-    if not resolved_yelp_url:
-        try:
-            y_search_url = resolve_yelp_url_from_search(body.name.strip(), body.location.strip())
-        except SearchUrlResolverError as e:
-            source_errors.append(f"yelp-search: {str(e)}")
-            y_search_url = None
-
-        if y_search_url and "yelp.com/biz/" in y_search_url.lower():
-            resolved_yelp_url = y_search_url
-            sync_store.upsert_source_place_link(
-                source="yelp",
-                restaurant_name=body.name,
-                restaurant_location=body.location,
-                source_url=y_search_url,
-            )
-        else:
+    resolved_yelp_url = None
+    if settings.apify_yelp_enabled:
+        resolved_yelp_url = sync_store.get_source_place_link(
+            source="yelp",
+            restaurant_name=body.name,
+            restaurant_location=body.location,
+        )
+        if not resolved_yelp_url:
             try:
-                y_url, y_place_id, y_dataset = discover_yelp_business_url(
-                    settings,
-                    restaurant_name=body.name.strip(),
-                    restaurant_location=body.location.strip(),
-                )
-                if y_dataset:
-                    dataset_urls.append(f"yelp-discovery: {y_dataset}")
-                if y_url:
-                    resolved_yelp_url = y_url
-                    sync_store.upsert_source_place_link(
-                        source="yelp",
-                        restaurant_name=body.name,
-                        restaurant_location=body.location,
-                        source_url=y_url,
-                        source_place_id=y_place_id,
-                    )
-                else:
-                    source_errors.append("yelp-discovery: no matching business URL found")
-            except YelpDiscoveryError as e:
-                source_errors.append(f"yelp-discovery: {str(e)}")
+                y_search_url = resolve_yelp_url_from_search(body.name.strip(), body.location.strip())
+            except SearchUrlResolverError as e:
+                source_errors.append(f"yelp-search: {str(e)}")
+                y_search_url = None
 
-    # Fetch order: Google -> TripAdvisor -> Yelp
+            if y_search_url and "yelp.com/biz/" in y_search_url.lower():
+                resolved_yelp_url = y_search_url
+                sync_store.upsert_source_place_link(
+                    source="yelp",
+                    restaurant_name=body.name,
+                    restaurant_location=body.location,
+                    source_url=y_search_url,
+                )
+            else:
+                try:
+                    y_url, y_place_id, y_dataset = discover_yelp_business_url(
+                        settings,
+                        restaurant_name=body.name.strip(),
+                        restaurant_location=body.location.strip(),
+                    )
+                    if y_dataset:
+                        dataset_urls.append(f"yelp-discovery: {y_dataset}")
+                    if y_url:
+                        resolved_yelp_url = y_url
+                        sync_store.upsert_source_place_link(
+                            source="yelp",
+                            restaurant_name=body.name,
+                            restaurant_location=body.location,
+                            source_url=y_url,
+                            source_place_id=y_place_id,
+                        )
+                    else:
+                        source_errors.append("yelp-discovery: no matching business URL found")
+                except YelpDiscoveryError as e:
+                    source_errors.append(f"yelp-discovery: {str(e)}")
+    else:
+        source_stats.append("yelp(skipped:disabled)")
+
+    # Fetch order: Google -> TripAdvisor -> (Yelp if enabled)
     for source in ("google", "tripadvisor", "yelp"):
+        if source == "yelp" and not settings.apify_yelp_enabled:
+            continue
+
         if source == "yelp" and not resolved_yelp_url:
             source_stats.append("yelp(skipped:no_resolved_url)")
             continue
@@ -193,6 +200,25 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
 
     insights = stub_insights_from_reviews(all_new_reviews)
 
+    # Load ALL stored reviews (not just new ones) for the response
+    all_stored_reviews = sync_store.get_all_reviews(
+        restaurant_name=body.name.strip(),
+        restaurant_location=body.location.strip(),
+    )
+    insights = stub_insights_from_reviews(all_stored_reviews)
+
+    review_items = [
+        ReviewItem(
+            id=r.review_key,
+            source=r.source,
+            text=r.text,
+            rating=r.rating,
+            date_iso=r.date_iso,
+        )
+        for r in all_stored_reviews
+        if r.text
+    ]
+
     if total_new:
         detail = (
             f"Incremental sync completed across Google + TripAdvisor + Yelp: "
@@ -215,6 +241,7 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
         restaurant_name=body.name.strip(),
         restaurant_location=body.location.strip(),
         insights=insights,
+        reviews=review_items,
         detail=detail,
         apify_dataset_url="\n".join(dataset_urls) if dataset_urls else None,
         extracted_range_from=min(range_from_values).isoformat() if range_from_values else None,
