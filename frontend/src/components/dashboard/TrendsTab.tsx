@@ -94,17 +94,9 @@ export default function TrendsTab({ reviews }: TrendsTabProps) {
   const tickFormatter = (val: string) => formatDateLabel(val);
 
   const hasData = series.length > 0;
-  const isLowData = reviews.length < 5;
 
   return (
     <div className="space-y-6">
-      {/* Low data banner */}
-      {isLowData && hasData && (
-        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 px-4 py-3 text-xs text-amber-700 dark:text-amber-300">
-          ⚠ <strong>Low confidence</strong> — trend charts are based on fewer than 5 reviews. Charts may not reflect true patterns yet.
-        </div>
-      )}
-
       {/* 1. Sentiment over time */}
       <ChartSection
         title="Customer sentiment over time"
