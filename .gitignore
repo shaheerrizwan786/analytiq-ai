@@ -49,4 +49,10 @@ backend/.venv/
 # Local development files
 .local/
 
+# Debug/temp scripts
+backend/query_db.py
+
+# SQLite databases (runtime data)
+backend/data/*.sqlite3
+
 
