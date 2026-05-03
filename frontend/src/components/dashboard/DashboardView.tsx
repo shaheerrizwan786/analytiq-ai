@@ -10,6 +10,8 @@ import AIRecommendationsList from './AIRecommendationsList';
 import RecentReviewsList from './RecentReviewsList';
 import ConfidenceIndicator from './ConfidenceIndicator';
 import ReviewsTab from './ReviewsTab';
+import PerformanceScoreCard from './PerformanceScoreCard';
+import TrendsTab from './TrendsTab';
 
 export interface DashboardData {
   restaurantName: string;
@@ -52,7 +54,7 @@ interface DashboardViewProps {
 }
 
 export default function DashboardView({ data }: DashboardViewProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'reviews'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'trends'>('overview');
 
   return (
     <AppShell>
@@ -85,10 +87,22 @@ export default function DashboardView({ data }: DashboardViewProps) {
           >
             Reviews{data.reviews.length > 0 ? ` (${data.reviews.length})` : ''}
           </button>
+          <button
+            onClick={() => setActiveTab('trends')}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'trends'
+                ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
+          >
+            Trends
+          </button>
         </div>
 
         {activeTab === 'overview' ? (
           <>
+            <PerformanceScoreCard reviews={data.reviews} />
+
             <WhatToFixFirst issue={data.topIssue} />
 
             <SentimentOverview sentiment={data.sentiment} />
@@ -107,8 +121,10 @@ export default function DashboardView({ data }: DashboardViewProps) {
               </div>
             </div>
           </>
-        ) : (
+        ) : activeTab === 'reviews' ? (
           <ReviewsTab reviews={data.reviews} />
+        ) : (
+          <TrendsTab reviews={data.reviews} />
         )}
       </div>
     </AppShell>
