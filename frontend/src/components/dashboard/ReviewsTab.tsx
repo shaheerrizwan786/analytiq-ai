@@ -62,10 +62,28 @@ function formatDate(iso: string | null): string {
   }
 }
 
+const SENTIMENT_LABELS: Record<Review['sentiment'], string> = {
+  positive: '✓ Great',
+  neutral: '~ Mixed',
+  negative: '✗ Concern',
+};
+
 export default function ReviewsTab({ reviews }: ReviewsTabProps) {
+  const [query, setQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState<Review['platform'] | 'all'>('all');
   const [sentimentFilter, setSentimentFilter] = useState<Review['sentiment'] | 'all'>('all');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'rating-high' | 'rating-low'>('newest');
+
+  const stats = useMemo(() => {
+    const total = reviews.length;
+    const positive = reviews.filter((r) => r.sentiment === 'positive').length;
+    const negative = reviews.filter((r) => r.sentiment === 'negative').length;
+    const withRating = reviews.filter((r) => r.rating != null);
+    const avgRating = withRating.length
+      ? withRating.reduce((s, r) => s + r.rating!, 0) / withRating.length
+      : null;
+    return { total, positive, negative, avgRating };
+  }, [reviews]);
 
   const sourceCounts = useMemo(() => {
     const counts: Record<Review['platform'], number> = { google: 0, tripadvisor: 0, yelp: 0 };
@@ -74,10 +92,13 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
   }, [reviews]);
 
   const filtered = useMemo(() => {
-    let result = reviews;
-    if (sourceFilter !== 'all') result = result.filter((r) => r.platform === sourceFilter);
-    if (sentimentFilter !== 'all') result = result.filter((r) => r.sentiment === sentimentFilter);
-
+    const q = query.toLowerCase().trim();
+    let result = reviews.filter((r) => {
+      if (sourceFilter !== 'all' && r.platform !== sourceFilter) return false;
+      if (sentimentFilter !== 'all' && r.sentiment !== sentimentFilter) return false;
+      if (q && !r.text.toLowerCase().includes(q) && !r.platform.includes(q)) return false;
+      return true;
+    });
     result = [...result].sort((a, b) => {
       if (sortOrder === 'newest') return (b.date_iso ?? '').localeCompare(a.date_iso ?? '');
       if (sortOrder === 'oldest') return (a.date_iso ?? '').localeCompare(b.date_iso ?? '');
@@ -86,106 +107,130 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
       return 0;
     });
     return result;
-  }, [reviews, sourceFilter, sentimentFilter, sortOrder]);
+  }, [reviews, query, sourceFilter, sentimentFilter, sortOrder]);
 
   const resetFilters = () => {
+    setQuery('');
     setSourceFilter('all');
     setSentimentFilter('all');
     setSortOrder('newest');
   };
 
-  const isFiltered = sourceFilter !== 'all' || sentimentFilter !== 'all';
+  const isFiltered = query !== '' || sourceFilter !== 'all' || sentimentFilter !== 'all';
 
   return (
-    <div className="space-y-4">
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Source pills */}
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setSourceFilter('all')}
-            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-              sourceFilter === 'all'
-                ? 'bg-violet-600 text-white border-violet-600'
-                : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'
-            }`}
-          >
-            All sources
-          </button>
-          {(['google', 'tripadvisor', 'yelp'] as Review['platform'][]).map((src) => (
-            <button
-              key={src}
-              onClick={() => setSourceFilter(src)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                sourceFilter === src
-                  ? 'bg-violet-600 text-white border-violet-600'
-                  : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'
-              }`}
-            >
-              {PLATFORM_LABELS[src]} {sourceCounts[src] > 0 && `(${sourceCounts[src]})`}
-            </button>
-          ))}
-        </div>
+    <div className="space-y-5">
 
-        <div className="h-4 w-px bg-gray-200" />
+      {/* Stats bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Total reviews', value: stats.total },
+          { label: 'Great reviews', value: `${stats.positive} (${stats.total ? Math.round(stats.positive / stats.total * 100) : 0}%)` },
+          { label: 'Concerns', value: `${stats.negative} (${stats.total ? Math.round(stats.negative / stats.total * 100) : 0}%)` },
+          { label: 'Avg rating', value: stats.avgRating != null ? `★ ${stats.avgRating.toFixed(1)}` : '—' },
+        ].map((s) => (
+          <div key={s.label} className="bg-white dark:bg-[#13131F] border border-gray-100 dark:border-[#1E1E2E] rounded-xl px-4 py-3">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{s.label}</p>
+            <p className="text-lg font-semibold text-gray-800 dark:text-gray-100">{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search review text…"
+          className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#13131F] text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400/40"
+        />
+        {query && (
+          <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Clear search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        )}
+      </div>
+
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Source pills */}
+        <button
+          onClick={() => setSourceFilter('all')}
+          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === 'all' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'}`}
+        >
+          All sources
+        </button>
+        {(['google', 'tripadvisor', 'yelp'] as Review['platform'][]).map((src) => (
+          <button
+            key={src}
+            onClick={() => setSourceFilter(src)}
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === src ? 'bg-violet-600 text-white border-violet-600' : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'}`}
+          >
+            {PLATFORM_LABELS[src]}{sourceCounts[src] > 0 ? ` (${sourceCounts[src]})` : ''}
+          </button>
+        ))}
+
+        <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
 
         {/* Sentiment pills */}
-        <div className="flex items-center gap-1.5">
-          {(['all', 'positive', 'neutral', 'negative'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setSentimentFilter(s)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                sentimentFilter === s
-                  ? 'bg-violet-600 text-white border-violet-600'
-                  : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'
-              }`}
-            >
-              {s === 'all' ? 'All sentiment' : s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
-        </div>
+        {(['all', 'positive', 'neutral', 'negative'] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setSentimentFilter(s)}
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sentimentFilter === s ? 'bg-violet-600 text-white border-violet-600' : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'}`}
+          >
+            {s === 'all' ? 'All' : SENTIMENT_LABELS[s]}
+          </button>
+        ))}
 
         <div className="ml-auto flex items-center gap-2">
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as typeof sortOrder)}
-            className="text-xs border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1.5 bg-white dark:bg-[#13131F] text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-white dark:bg-[#13131F] text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-violet-500"
           >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
-            <option value="rating-high">Rating: high to low</option>
-            <option value="rating-low">Rating: low to high</option>
+            <option value="rating-high">Rating: high → low</option>
+            <option value="rating-low">Rating: low → high</option>
           </select>
         </div>
       </div>
 
-      {/* Summary */}
-      <p className="text-sm text-gray-500 dark:text-gray-400">
-        Showing {filtered.length} of {reviews.length} review{reviews.length !== 1 ? 's' : ''}
-      </p>
+      {/* Count + reset */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {filtered.length === reviews.length
+            ? `${reviews.length} review${reviews.length !== 1 ? 's' : ''}`
+            : `${filtered.length} of ${reviews.length} review${reviews.length !== 1 ? 's' : ''}`}
+        </p>
+        {isFiltered && (
+          <button onClick={resetFilters} className="text-xs text-violet-500 hover:text-violet-400 underline">
+            Clear filters
+          </button>
+        )}
+      </div>
 
       {/* Review cards */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 space-y-2">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">No reviews match the current filters.</p>
-          {isFiltered && (
-            <button onClick={resetFilters} className="text-sm text-violet-600 dark:text-violet-400 underline hover:text-violet-800">
-              Reset filters
-            </button>
-          )}
+          <p className="text-gray-500 dark:text-gray-400 text-sm">No reviews match your search or filters.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((review) => (
-            <div key={review.id} className="bg-white dark:bg-[#13131F] border border-gray-100 dark:border-[#1E1E2E] rounded-xl p-4 shadow-sm space-y-2">
+            <div key={review.id} className="bg-white dark:bg-[#13131F] border border-gray-100 dark:border-[#1E1E2E] rounded-xl p-4 shadow-sm space-y-2.5">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PLATFORM_COLORS[review.platform]}`}>
                     {PLATFORM_LABELS[review.platform]}
                   </span>
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${SENTIMENT_COLORS[review.sentiment]}`}>
-                    {review.sentiment.charAt(0).toUpperCase() + review.sentiment.slice(1)}
+                    {SENTIMENT_LABELS[review.sentiment]}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
