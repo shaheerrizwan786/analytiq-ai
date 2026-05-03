@@ -12,6 +12,8 @@ import ConfidenceIndicator from './ConfidenceIndicator';
 import ReviewsTab from './ReviewsTab';
 import PerformanceScoreCard from './PerformanceScoreCard';
 import TrendsTab from './TrendsTab';
+import StrengthsList from './StrengthsList';
+import { useAppMode } from '@/lib/modeContext';
 
 export interface DashboardData {
   restaurantName: string;
@@ -47,18 +49,49 @@ export interface DashboardData {
     sentiment: 'positive' | 'neutral' | 'negative';
   }[];
   confidence: { level: 'High' | 'Medium' | 'Low'; percentage: number; note: string };
+  strengths: { id: string; text: string; category: string; impactLabel: string }[];
 }
 
 interface DashboardViewProps {
   data: DashboardData;
+  onBack?: () => void;
 }
 
-export default function DashboardView({ data }: DashboardViewProps) {
+export default function DashboardView({ data, onBack }: DashboardViewProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'trends'>('overview');
+  const { mode } = useAppMode();
 
   return (
     <AppShell>
+      {/* Demo mode ribbon */}
+      {mode === 'demo' && (
+        <div className="w-full bg-amber-500/10 border-b border-amber-400/30">
+          <div className="max-w-6xl mx-auto px-4 h-9 flex items-center justify-between">
+            <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+              Demo mode &mdash; viewing sample data for The Meridian Kitchen
+            </span>
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="text-xs font-medium text-amber-700 dark:text-amber-300 hover:underline"
+              >
+                Exit demo
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto py-10 px-4 space-y-8">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+            New analysis
+          </button>
+        )}
         <DashboardHeader
           restaurantName={data.restaurantName}
           location={data.location}
@@ -108,9 +141,11 @@ export default function DashboardView({ data }: DashboardViewProps) {
             <SentimentOverview sentiment={data.sentiment} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <StrengthsList strengths={data.strengths} />
               <CustomerIssuesList issues={data.issues} />
-              <AIRecommendationsList recommendations={data.recommendations} />
             </div>
+
+            <AIRecommendationsList recommendations={data.recommendations} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">

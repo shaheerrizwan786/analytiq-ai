@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { getSession, clearSession } from '@/lib/auth';
 import { toggleTheme, getTheme, type Theme } from '@/lib/theme';
 import AuthModal from '@/components/auth/AuthModal';
+import { useAppMode } from '@/lib/modeContext';
 
 export default function Navbar() {
   const [session, setSession] = useState<string | null>(null);
   const [theme, setThemeState] = useState<Theme>('light');
   const [showModal, setShowModal] = useState(false);
+  const { mode, restaurantName } = useAppMode();
 
   useEffect(() => {
     setSession(getSession());
@@ -57,6 +59,16 @@ export default function Navbar() {
               <span className="bg-gradient-to-r from-violet-600 to-cyan-500 bg-clip-text text-transparent">Analytiq</span>
               <span className="text-gray-900 dark:text-gray-100"> AI</span>
             </span>
+            {restaurantName && (
+              <span className="hidden sm:block text-xs text-gray-400 dark:text-gray-500 truncate max-w-[140px]">
+                {restaurantName}
+              </span>
+            )}
+            {mode === 'demo' && (
+              <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                Demo
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

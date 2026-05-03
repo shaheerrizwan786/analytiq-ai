@@ -5,9 +5,12 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import AppShell from '@/components/layout/AppShell';
+import AuthModal from '@/components/auth/AuthModal';
 import DashboardView, { DashboardData } from '@/components/dashboard/DashboardView';
 import { analyzeRestaurant, AnalyzeResponse } from '@/lib/api';
 import { getSession, getSavedRestaurant, saveRestaurant } from '@/lib/auth';
+import { useAppMode } from '@/lib/modeContext';
+import { demoDashboardData } from '@/lib/demoData';
 
 function mapToUi(api: AnalyzeResponse, name: string, location: string): DashboardData {
   const insights = api.insights ?? {};
@@ -68,6 +71,7 @@ function mapToUi(api: AnalyzeResponse, name: string, location: string): Dashboar
     location: api.restaurant_location ?? location,
     totalReviews,
     sentiment,
+    strengths: [],
     topIssue,
     issues,
     recommendations,
@@ -80,14 +84,176 @@ function mapToUi(api: AnalyzeResponse, name: string, location: string): Dashboar
   };
 }
 
-export default function Home() {
+// ---------------------------------------------------------------------------
+// Logo (reused from Navbar, larger variant for landing page)
+// ---------------------------------------------------------------------------
+function LogoMark({ size = 36 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 28 28"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="landing-logo-grad" x1="0" y1="0" x2="28" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#6C35E0" />
+          <stop offset="100%" stopColor="#22D3EE" />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="18" width="4.5" height="7" rx="1.5" fill="url(#landing-logo-grad)" />
+      <rect x="8" y="13" width="4.5" height="12" rx="1.5" fill="url(#landing-logo-grad)" />
+      <rect x="14" y="8" width="4.5" height="17" rx="1.5" fill="url(#landing-logo-grad)" />
+      <rect x="20" y="3" width="4.5" height="22" rx="1.5" fill="url(#landing-logo-grad)" />
+      <circle cx="22.25" cy="1.5" r="1.5" fill="#F97316" />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Landing page — marketing splash, no Navbar
+// ---------------------------------------------------------------------------
+function LandingPage({
+  onDemo,
+  onAnalyze,
+  onSignInSuccess,
+}: {
+  onDemo: () => void;
+  onAnalyze: () => void;
+  onSignInSuccess: (email: string) => void;
+}) {
+  const [showAuth, setShowAuth] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 60);
+    return () => clearTimeout(t);
+  }, []);
+
+  function handleAuthSuccess(email: string) {
+    setShowAuth(false);
+    onSignInSuccess(email);
+  }
+
+  return (
+    <div className="relative min-h-screen bg-[#0C0C18] overflow-hidden flex flex-col">
+      {/* Animated background orbs */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="animate-float-blob absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full bg-violet-600/20 blur-3xl" />
+        <div className="animate-float-blob-delay absolute -bottom-48 -right-48 w-[500px] h-[500px] rounded-full bg-cyan-500/15 blur-3xl" />
+        <div className="animate-float-blob absolute top-1/3 right-1/4 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl" />
+      </div>
+
+      {/* Top bar */}
+      <header className="relative z-10 w-full max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <LogoMark size={32} />
+          <span className="text-base font-semibold tracking-tight">
+            <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">Analytiq</span>
+            <span className="text-gray-200"> AI</span>
+          </span>
+        </div>
+        <button
+          onClick={() => setShowAuth(true)}
+          className="text-sm font-medium text-gray-400 hover:text-gray-100 transition-colors"
+        >
+          Sign in
+        </button>
+      </header>
+
+      {/* Hero */}
+      <main className="relative z-10 flex flex-1 items-center justify-center px-4">
+        <div
+          className={`w-full max-w-2xl text-center transition-all duration-700 ease-out ${
+            visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+          }`}
+        >
+          {/* Status badge */}
+          <div className="inline-flex items-center gap-2 mb-8 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-gray-400 backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Real-time review intelligence for restaurants
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.15]">
+            Turn customer reviews into
+            <br />
+            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">
+              your competitive edge
+            </span>
+          </h1>
+
+          {/* Subtext */}
+          <p className="mt-6 text-base sm:text-lg text-gray-400 max-w-xl mx-auto leading-relaxed">
+            Analytiq aggregates reviews from Google, TripAdvisor, and Yelp &mdash; then surfaces
+            exactly what to fix and what to celebrate.
+          </p>
+
+          {/* CTAs */}
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={onDemo}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03] shadow-lg shadow-orange-500/25"
+            >
+              View live demo
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+            <button
+              onClick={onAnalyze}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-gray-100 font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03] backdrop-blur-sm"
+            >
+              Start analysis
+            </button>
+          </div>
+
+          {/* Social proof */}
+          <p className="mt-10 text-xs text-gray-600">
+            Trusted by independent restaurants &middot; No credit card required &middot; Results in under 2 minutes
+          </p>
+        </div>
+      </main>
+
+      {/* Feature strip */}
+      <div className="relative z-10 border-t border-white/5 bg-white/[0.02] backdrop-blur-sm">
+        <div className="max-w-4xl mx-auto px-6 py-6 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+          {[
+            { icon: '📊', label: 'Sentiment trends', desc: 'Track how guest mood shifts over time' },
+            { icon: '✅', label: 'Strengths spotlight', desc: 'See exactly what keeps guests coming back' },
+            { icon: '🎯', label: 'Prioritised fixes', desc: 'Know which issues drive the most impact' },
+          ].map(({ icon, label, desc }) => (
+            <div key={label} className="space-y-1">
+              <div className="text-xl">{icon}</div>
+              <p className="text-sm font-medium text-gray-300">{label}</p>
+              <p className="text-xs text-gray-600">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {showAuth && (
+        <AuthModal onSuccess={handleAuthSuccess} onClose={() => setShowAuth(false)} />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Analyse form (live mode)
+// ---------------------------------------------------------------------------
+function AnalyzeForm({
+  onBack,
+  onDone,
+}: {
+  onBack: () => void;
+  onDone: (data: DashboardData) => void;
+}) {
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
 
-  // On mount: check session → auto-fill saved restaurant
   useEffect(() => {
     const email = getSession();
     if (email) {
@@ -108,10 +274,9 @@ export default function Home() {
     try {
       const res = await analyzeRestaurant(name.trim(), location.trim());
       const uiData = mapToUi(res, name.trim(), location.trim());
-      setDashboardData(uiData);
-      // Save restaurant for logged-in users
       const email = getSession();
       if (email) saveRestaurant(email, name.trim(), location.trim());
+      onDone(uiData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
@@ -119,26 +284,27 @@ export default function Home() {
     }
   }
 
-  if (dashboardData) {
-    return <DashboardView data={dashboardData} />;
-  }
-
   return (
     <AppShell>
       <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center relative overflow-hidden">
-        {/* Background gradient orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="animate-float-blob absolute -top-32 -left-32 w-96 h-96 rounded-full bg-violet-500/20 dark:bg-violet-600/15 blur-3xl" />
           <div className="animate-float-blob-delay absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-cyan-400/20 dark:bg-cyan-500/10 blur-3xl" />
-          <div className="animate-float-blob absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-orange-400/10 blur-3xl" />
         </div>
 
         <div className="relative z-10 w-full max-w-md">
-          {/* Trust badge */}
+          <button
+            onClick={onBack}
+            className="mb-5 flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+            Back
+          </button>
+
           <div className="flex justify-center mb-6">
             <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-[#13131F]/80 backdrop-blur-sm border border-gray-100 dark:border-[#1E1E2E] rounded-full px-3 py-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Analysing reviews from Google · TripAdvisor · Yelp
+              Analysing reviews from Google &middot; TripAdvisor &middot; Yelp
             </div>
           </div>
 
@@ -148,46 +314,94 @@ export default function Home() {
                 Know what to fix.<br />Before guests leave.
               </h1>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Enter a restaurant to get AI-powered insights from customer reviews in seconds.
+                Enter your restaurant to get AI-powered insights from customer reviews in seconds.
               </p>
             </div>
 
-          {error && (
-            <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-900 px-4 py-3 text-sm text-red-600 dark:text-red-400">
-              {error}
-            </div>
-          )}
+            {error && (
+              <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-900 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                {error}
+              </div>
+            )}
 
-          <div className="space-y-4">
-            <Input
-              label="Restaurant Name"
-              placeholder="e.g. Nobu Melbourne"
-              value={name}
-              onChange={setName}
-              isDisabled={isLoading}
-            />
-            <Input
-              label="Location"
-              placeholder="e.g. Melbourne, VIC"
-              value={location}
-              onChange={setLocation}
-              isDisabled={isLoading}
-            />
-            <div className="pt-2">
-              <Button
-                onClick={handleSubmit}
-                isDisabled={!canSubmit}
-                isLoading={isLoading}
-                size="lg"
-                fullWidth
-              >
-                Connect &amp; Analyse
-              </Button>
+            <div className="space-y-4">
+              <Input
+                label="Restaurant Name"
+                placeholder="e.g. The Meridian Kitchen"
+                value={name}
+                onChange={setName}
+                isDisabled={isLoading}
+              />
+              <Input
+                label="Location"
+                placeholder="e.g. Clayton, VIC"
+                value={location}
+                onChange={setLocation}
+                isDisabled={isLoading}
+              />
+              <div className="pt-2">
+                <Button onClick={handleSubmit} isDisabled={!canSubmit} isLoading={isLoading} size="lg" fullWidth>
+                  Connect &amp; Analyse
+                </Button>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
         </div>
       </div>
     </AppShell>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Root page — state machine
+// ---------------------------------------------------------------------------
+type View = 'landing' | 'analyze' | 'dashboard';
+
+export default function Home() {
+  const [view, setView] = useState<View>('landing');
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const { setMode } = useAppMode();
+
+  function handleViewDemo() {
+    setMode('demo', 'The Meridian Kitchen');
+    setDashboardData(demoDashboardData);
+    setView('dashboard');
+  }
+
+  function handleStartAnalysis() {
+    setMode('live');
+    setView('analyze');
+  }
+
+  function handleSignInSuccess() {
+    setMode('live');
+    setView('analyze');
+  }
+
+  function handleAnalysisDone(data: DashboardData) {
+    setDashboardData(data);
+    setView('dashboard');
+  }
+
+  function handleBack() {
+    setMode('live');
+    setDashboardData(null);
+    setView('landing');
+  }
+
+  if (view === 'dashboard' && dashboardData) {
+    return <DashboardView data={dashboardData} onBack={handleBack} />;
+  }
+
+  if (view === 'analyze') {
+    return <AnalyzeForm onBack={() => setView('landing')} onDone={handleAnalysisDone} />;
+  }
+
+  return (
+    <LandingPage
+      onDemo={handleViewDemo}
+      onAnalyze={handleStartAnalysis}
+      onSignInSuccess={handleSignInSuccess}
+    />
   );
 }
