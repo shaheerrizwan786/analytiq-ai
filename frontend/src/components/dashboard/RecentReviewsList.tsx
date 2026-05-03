@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 
 type Platform = 'google' | 'tripadvisor' | 'yelp';
 type Sentiment = 'positive' | 'neutral' | 'negative';
+type TimeRange = '7d' | '30d' | 'all';
 
 interface Review {
   id: string;
@@ -37,19 +38,34 @@ const sentimentFilterColors: Record<string, string> = {
   negative: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
 };
 
+const timeRangeLabels: Record<TimeRange, string> = {
+  '7d': 'This week',
+  '30d': 'This month',
+  'all': 'All time',
+};
+
 function ReviewItem({ review }: { review: Review }) {
   const formattedDate = review.date_iso
-    ? (() => { try { return new Date(review.date_iso!).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); } catch { return review.date_iso; } })()
+    ? (() => {
+        try {
+          return new Date(review.date_iso!).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+          });
+        } catch {
+          return review.date_iso;
+        }
+      })()
     : null;
 
   return (
     <div className="py-3 border-b border-gray-50 dark:border-gray-800 last:border-0">
-      <div className="flex items-center gap-2 mb-1.5">
+      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
         <span className={`text-xs font-medium rounded-md px-2 py-0.5 capitalize ${platformColors[review.platform]}`}>
           {review.platform}
         </span>
         <span className={`text-xs font-medium rounded-md px-2 py-0.5 capitalize ${sentimentColors[review.sentiment]}`}>
-          {review.sentiment}
+          {review.sentiment === 'positive' ? '✓ Great' : review.sentiment === 'negative' ? '✗ Concern' : '~ Mixed'}
         </span>
         {review.rating != null && (
           <span className="text-xs text-gray-400 dark:text-gray-500">★ {review.rating.toFixed(1)}</span>
@@ -66,28 +82,68 @@ function ReviewItem({ review }: { review: Review }) {
 export default function RecentReviewsList({ reviews }: RecentReviewsListProps) {
   const [query, setQuery] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState<'all' | Sentiment>('all');
+  const [timeRange, setTimeRange] = useState<TimeRange>('7d');
+
+  // Derive cutoff relative to the latest review date (so demo data always has "recent" items)
+  const latestDate = useMemo(() => {
+    const dates = reviews
+      .map((r) => r.date_iso)
+      .filter(Boolean)
+      .sort() as string[];
+    return dates.length > 0 ? new Date(dates[dates.length - 1] + 'T23:59:59') : new Date();
+  }, [reviews]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
     return reviews.filter((r) => {
+      // Time range
+      if (timeRange !== 'all' && r.date_iso) {
+        const days = timeRange === '7d' ? 7 : 30;
+        const cutoff = new Date(latestDate.getTime() - days * 24 * 60 * 60 * 1000);
+        if (new Date(r.date_iso) < cutoff) return false;
+      }
+      // Sentiment
       if (sentimentFilter !== 'all' && r.sentiment !== sentimentFilter) return false;
+      // Search
       if (q && !r.text.toLowerCase().includes(q) && !r.platform.includes(q)) return false;
       return true;
     });
-  }, [reviews, query, sentimentFilter]);
+  }, [reviews, query, sentimentFilter, timeRange, latestDate]);
 
-  const filters: Array<'all' | Sentiment> = ['all', 'positive', 'neutral', 'negative'];
+  const sentimentFilters: Array<'all' | Sentiment> = ['all', 'positive', 'neutral', 'negative'];
+  const timeRanges: TimeRange[] = ['7d', '30d', 'all'];
+
+  const headingLabel = timeRange === '7d'
+    ? `${filtered.length} review${filtered.length !== 1 ? 's' : ''} this week`
+    : timeRange === '30d'
+    ? `${filtered.length} review${filtered.length !== 1 ? 's' : ''} this month`
+    : `${filtered.length} of ${reviews.length} reviews`;
 
   return (
     <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">
-          Recent reviews
+          Customer reviews
         </p>
-        <span className="text-xs text-gray-400 dark:text-gray-500">
-          {filtered.length} / {reviews.length}
-        </span>
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{headingLabel}</span>
+      </div>
+
+      {/* Time range tabs */}
+      <div className="flex gap-1 mb-3 bg-gray-50 dark:bg-gray-900/40 rounded-lg p-0.5 w-fit">
+        {timeRanges.map((tr) => (
+          <button
+            key={tr}
+            onClick={() => setTimeRange(tr)}
+            className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
+              timeRange === tr
+                ? 'bg-white dark:bg-[#13131F] text-gray-800 dark:text-gray-100 shadow-sm'
+                : 'text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            {timeRangeLabels[tr]}
+          </button>
+        ))}
       </div>
 
       {/* Search */}
@@ -120,7 +176,7 @@ export default function RecentReviewsList({ reviews }: RecentReviewsListProps) {
 
       {/* Sentiment filter pills */}
       <div className="flex gap-1.5 mb-3 flex-wrap">
-        {filters.map((f) => (
+        {sentimentFilters.map((f) => (
           <button
             key={f}
             onClick={() => setSentimentFilter(f)}
@@ -130,7 +186,7 @@ export default function RecentReviewsList({ reviews }: RecentReviewsListProps) {
                 : 'text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400'
             }`}
           >
-            {f === 'all' ? 'All' : f}
+            {f === 'all' ? 'All' : f === 'positive' ? '✓ Great' : f === 'negative' ? '✗ Concerns' : '~ Mixed'}
           </button>
         ))}
       </div>
@@ -138,7 +194,17 @@ export default function RecentReviewsList({ reviews }: RecentReviewsListProps) {
       {/* Scrollable list */}
       <div className="overflow-y-auto max-h-[420px] pr-1">
         {filtered.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-600 py-6 text-center">No reviews match your filter.</p>
+          <div className="py-8 text-center">
+            <p className="text-sm text-gray-400 dark:text-gray-600">No reviews in this period.</p>
+            {timeRange !== 'all' && (
+              <button
+                onClick={() => setTimeRange('all')}
+                className="mt-2 text-xs text-violet-500 hover:text-violet-400 underline"
+              >
+                Show all reviews
+              </button>
+            )}
+          </div>
         ) : (
           filtered.map((review) => <ReviewItem key={review.id} review={review} />)
         )}

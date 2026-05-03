@@ -222,3 +222,83 @@ export function formatDateLabel(dateStr: string): string {
     return dateStr;
   }
 }
+
+// ─── Weekly Aggregation ─────────────────────────────────────────────────────
+
+export interface WeeklyPoint {
+  weekStart: string; // YYYY-MM-DD of the Monday
+  weekLabel: string; // e.g. "Mar 10 – 16"
+  positive: number;
+  neutral: number;
+  negative: number;
+  total: number;
+  score: number;
+}
+
+/** Return the ISO Monday for any date string. */
+function toWeekStart(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  const day = d.getDay(); // 0 = Sun
+  const shift = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + shift);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Format a week as "Mar 10 – 16". */
+export function formatWeekLabel(weekStart: string): string {
+  try {
+    const start = new Date(weekStart + 'T12:00:00');
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    const s = start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const e = end.toLocaleDateString(undefined, { day: 'numeric' });
+    return `${s} – ${e}`;
+  } catch {
+    return weekStart;
+  }
+}
+
+/**
+ * Groups reviews by ISO week (Mon–Sun) and returns sorted WeeklyPoint array.
+ * Reviews without a parseable date are silently dropped.
+ */
+export function buildWeeklyTimeSeries(reviews: ReviewInput[]): WeeklyPoint[] {
+  const map = new Map<string, { positive: number; neutral: number; negative: number }>();
+
+  for (const r of reviews) {
+    const key = toDateKey(r.date_iso);
+    if (!key) continue;
+    const wk = toWeekStart(key);
+    if (!map.has(wk)) map.set(wk, { positive: 0, neutral: 0, negative: 0 });
+    const bucket = map.get(wk)!;
+    bucket[r.sentiment] += 1;
+  }
+
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([wStart, counts]) => {
+      const total = counts.positive + counts.neutral + counts.negative;
+      const rawScore = total > 0 ? ((counts.positive - counts.negative) / total) * 100 : 0;
+      return {
+        weekStart: wStart,
+        weekLabel: formatWeekLabel(wStart),
+        ...counts,
+        total,
+        score: Math.round(clamp(rawScore, 0, 100)),
+      };
+    });
+}
+
+/** Filter reviews to those within the last N days from a reference date. */
+export function filterRecentReviews(reviews: ReviewInput[], days: number, refDate?: Date): ReviewInput[] {
+  const ref = refDate ?? new Date();
+  const cutoff = new Date(ref.getTime() - days * 24 * 60 * 60 * 1000);
+  return reviews.filter((r) => {
+    if (!r.date_iso) return false;
+    try {
+      return new Date(r.date_iso) >= cutoff;
+    } catch {
+      return false;
+    }
+  });
+}
