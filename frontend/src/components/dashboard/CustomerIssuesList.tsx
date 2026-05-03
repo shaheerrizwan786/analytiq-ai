@@ -47,11 +47,17 @@ export default function CustomerIssuesList({ issues }: CustomerIssuesListProps) 
   return (
     <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm p-5">
       <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-4">Customer issues</p>
-      <div>
-        {issues.map((issue, i) => (
-          <IssueItem key={issue.id} issue={issue} rank={i + 1} />
-        ))}
-      </div>
+      {issues.length === 0 ? (
+        <p className="text-sm text-gray-400 dark:text-gray-500 py-2">
+          AI analysis not yet connected — issues will appear here.
+        </p>
+      ) : (
+        <div>
+          {issues.map((issue, i) => (
+            <IssueItem key={issue.id} issue={issue} rank={i + 1} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

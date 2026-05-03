@@ -29,7 +29,7 @@ const PLATFORM_COLORS: Record<Review['platform'], string> = {
 
 const SENTIMENT_COLORS: Record<Review['sentiment'], string> = {
   positive: 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300',
-  neutral: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
+  neutral: 'bg-slate-200 dark:bg-gray-800 text-slate-700 dark:text-gray-300',
   negative: 'bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300',
 };
 

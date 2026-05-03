@@ -49,8 +49,8 @@ function mapToUi(api: AnalyzeResponse, name: string, location: string): Dashboar
         expectedImpacts: [],
       };
 
-  const pct = Math.min(90, totalReviews > 0 ? Math.round(totalReviews / 3) : 0);
-  const level: 'High' | 'Medium' | 'Low' = pct >= 60 ? 'High' : pct >= 35 ? 'Medium' : 'Low';
+  const pct = Math.min(90, totalReviews > 0 ? Math.round((totalReviews / 50) * 100) : 0);
+  const level: 'High' | 'Medium' | 'Low' = pct >= 60 ? 'High' : pct >= 30 ? 'Medium' : 'Low';
 
   const reviews = (api.reviews ?? []).map((r) => ({
     id: r.id,
