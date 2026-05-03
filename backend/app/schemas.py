@@ -25,12 +25,21 @@ class InsightsPayload(BaseModel):
     sources: SourceCounts
 
 
+class ReviewItem(BaseModel):
+    id: str
+    source: str
+    text: str
+    rating: float | None = None
+    date_iso: str | None = None
+
+
 class AnalyzeResponse(BaseModel):
     job_id: str
     status: str
     restaurant_name: str
     restaurant_location: str
     insights: InsightsPayload
+    reviews: list[ReviewItem] = []
     detail: str = Field(
         default="Stub response; wire Apify + LLM + DB in pipeline.",
         description="Human-readable pipeline note (safe to show in UI).",

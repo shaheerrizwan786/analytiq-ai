@@ -27,9 +27,15 @@ class ApifyReviewsError(RuntimeError):
 _SUPPORTED_SOURCES = {"google", "yelp", "tripadvisor"}
 
 
-def per_source_review_limit(settings: Settings) -> int:
-    """Split total review budget evenly across 3 sources."""
-    return max(1, settings.apify_max_reviews // 3)
+def per_source_review_limit(settings: Settings, source: str) -> int:
+    """Return the review limit for the given source."""
+    if source == "google":
+        return settings.apify_google_max_reviews
+    if source == "tripadvisor":
+        return settings.apify_tripadvisor_max_reviews
+    if source == "yelp":
+        return settings.apify_yelp_max_reviews
+    return 3
 
 
 def _parse_iso_datetime(value: str | None) -> datetime | None:
@@ -100,7 +106,7 @@ def _build_actor_input(
     tripadvisor_url: str | None = None,
     yelp_url: str | None = None,
 ) -> dict:
-    limit = per_source_review_limit(settings)
+    limit = per_source_review_limit(settings, source)
 
     if source == "google":
         return {
@@ -258,7 +264,7 @@ def fetch_reviews_for_source(
     dataset_id = run["defaultDatasetId"]
     dataset_url = f"https://console.apify.com/storage/datasets/{dataset_id}"
 
-    limit = per_source_review_limit(settings)
+    limit = per_source_review_limit(settings, source)
     normalized: list[ReviewNormalized] = []
     seen_keys: set[str] = set()
 

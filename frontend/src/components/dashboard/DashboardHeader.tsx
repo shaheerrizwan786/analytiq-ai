@@ -8,12 +8,14 @@ export default function DashboardHeader({ restaurantName, location, totalReviews
   return (
     <div className="flex items-start justify-between">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">{restaurantName}</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{location}</p>
+        <h1 className="text-2xl font-semibold bg-gradient-to-r from-violet-700 to-orange-500 dark:from-violet-400 dark:to-orange-400 bg-clip-text text-transparent">
+          {restaurantName}
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{location}</p>
       </div>
       <div className="text-right">
-        <p className="text-2xl font-semibold text-gray-900">{totalReviews.toLocaleString()}</p>
-        <p className="text-sm text-gray-500 mt-0.5">reviews analysed</p>
+        <p className="text-2xl font-semibold text-orange-500 dark:text-orange-400">{totalReviews.toLocaleString()}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">reviews analysed</p>
       </div>
     </div>
   );

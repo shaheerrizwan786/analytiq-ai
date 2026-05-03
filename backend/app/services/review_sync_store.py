@@ -13,6 +13,15 @@ class IncrementalWindow:
     until: datetime | None
 
 
+@dataclass
+class StoredReview:
+    source: str
+    review_key: str
+    text: str
+    rating: float | None
+    date_iso: str | None
+
+
 class ReviewSyncStore:
     """Lightweight local persistence for review dedupe + sync checkpoints.
 
@@ -177,6 +186,34 @@ class ReviewSyncStore:
                     self._now_iso(),
                 ),
             )
+
+    def get_all_reviews(
+        self,
+        *,
+        restaurant_name: str,
+        restaurant_location: str,
+    ) -> list[StoredReview]:
+        """Return all stored reviews for a restaurant, newest first."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT source, review_key, text, rating, review_date_iso
+                FROM review_items
+                WHERE restaurant_name = ? AND restaurant_location = ?
+                ORDER BY review_date_iso DESC
+                """,
+                (self._norm(restaurant_name), self._norm(restaurant_location)),
+            ).fetchall()
+        return [
+            StoredReview(
+                source=row["source"],
+                review_key=row["review_key"],
+                text=row["text"],
+                rating=row["rating"],
+                date_iso=row["review_date_iso"],
+            )
+            for row in rows
+        ]
 
     def upsert_reviews_and_state(
         self,
