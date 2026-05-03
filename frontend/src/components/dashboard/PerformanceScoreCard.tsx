@@ -37,9 +37,9 @@ const SCORE_STYLES = {
 } as const;
 
 const TREND_ICONS = {
-  up: { icon: 'â†‘', cls: 'text-emerald-600 dark:text-emerald-400' },
-  down: { icon: 'â†“', cls: 'text-rose-500 dark:text-rose-400' },
-  flat: { icon: 'â†’', cls: 'text-gray-400 dark:text-gray-500' },
+  up: { icon: '▲', cls: 'text-emerald-600 dark:text-emerald-400' },
+  down: { icon: '▼', cls: 'text-rose-500 dark:text-rose-400' },
+  flat: { icon: '—', cls: 'text-gray-400 dark:text-gray-500' },
 } as const;
 
 // â”€â”€â”€ Star rating legend config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -209,12 +209,12 @@ export default function PerformanceScoreCard({ reviews }: PerformanceScoreCardPr
 
           {/* Scale ticks */}
           <div className="flex justify-between text-[10px] text-gray-300 dark:text-gray-600 mt-0.5 px-px">
-            <span>â˜…1</span>
-            <span>â˜…2.5</span>
-            <span>â˜…3.5</span>
-            <span>â˜…4</span>
-            <span>â˜…4.5</span>
-            <span>â˜…5</span>
+            <span>1.0</span>
+            <span>2.5</span>
+            <span>3.5</span>
+            <span>4.0</span>
+            <span>4.5</span>
+            <span>5.0</span>
           </div>
         </div>
       ) : (
