@@ -149,7 +149,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <RecentReviewsList reviews={data.reviews} />
+                <RecentReviewsList reviews={data.reviews} onViewAll={() => setActiveTab('reviews')} />
               </div>
               <div>
                 <ConfidenceIndicator confidence={data.confidence} />
