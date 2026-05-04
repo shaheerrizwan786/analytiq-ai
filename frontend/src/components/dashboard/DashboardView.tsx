@@ -71,11 +71,11 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
   const stickyTop = mode === 'demo' ? 92 : 56;
 
   return (
-    <AppShell>
+    <AppShell mainClassName="flex-1 flex flex-col w-full overflow-hidden">
       {/* Demo mode ribbon */}
       {mode === 'demo' && (
-        <div className="w-full bg-amber-500/10 border-b border-amber-400/30">
-          <div className="max-w-6xl mx-auto px-4 h-9 flex items-center justify-between">
+        <div className="w-full shrink-0 bg-amber-500/10 border-b border-amber-400/30">
+          <div className="px-6 h-9 flex items-center justify-between">
             <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
               Demo mode &mdash; viewing sample data for The Meridian Kitchen
             </span>
@@ -91,12 +91,12 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
         </div>
       )}
 
-      {/* Split-pane root: flex when chat open on desktop */}
-      <div className={`${chatOpen ? 'lg:flex lg:items-start' : ''}`}>
+      {/* Split content area — fills remaining viewport height */}
+      <div className="flex flex-1 overflow-hidden">
 
-        {/* ── Left: scrollable dashboard content ── */}
-        <div className={`${chatOpen ? 'lg:flex-1 lg:min-w-0' : ''}`}>
-          <div className={`${chatOpen ? 'px-4 lg:px-6 py-8 space-y-8' : 'max-w-6xl mx-auto py-10 px-4 space-y-8'}`}>
+        {/* ── Left: scrollable dashboard column ── */}
+        <div className="flex-1 min-w-0 overflow-y-auto">
+          <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
             {onBack && (
               <button
                 onClick={onBack}
@@ -112,7 +112,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
               totalReviews={data.totalReviews}
             />
 
-            {/* Tab nav + AI Advisor toggle */}
+            {/* Tab nav + AI Advisor pill toggle */}
             <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
               <div className="flex gap-1">
                 <button
@@ -147,16 +147,16 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                 </button>
               </div>
 
-              {/* AI Advisor toggle — desktop only */}
+              {/* AI Advisor pill toggle — desktop only */}
               <button
                 onClick={() => setChatOpen((o) => !o)}
-                className={`hidden lg:flex items-center gap-1.5 px-3 py-2 mb-[-1px] text-xs font-semibold border-b-2 transition-colors ${
+                className={`hidden lg:flex items-center gap-2 mb-[-1px] px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 ${
                   chatOpen
-                    ? 'border-violet-500 text-violet-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-violet-400'
+                    ? 'bg-violet-600 text-white border-violet-600 shadow-sm shadow-violet-500/25'
+                    : 'bg-transparent text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-700 hover:border-violet-500 dark:hover:border-violet-500 hover:text-violet-600 dark:hover:text-violet-400'
                 }`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 AI Advisor
               </button>
             </div>
@@ -188,23 +188,24 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
           </div>
         </div>
 
-        {/* ── Right: sticky inline chat column (desktop only, when open) ── */}
-        {chatOpen && (
-          <aside
-            className="hidden lg:flex flex-col w-[400px] xl:w-[440px] shrink-0 border-l border-[#1E1E2E] sticky overflow-hidden"
-            style={{ top: stickyTop, height: `calc(100vh - ${stickyTop}px)` }}
-          >
-            <ChatPanel
-              variant="inline"
-              open={chatOpen}
-              onClose={() => setChatOpen(false)}
-              restaurantName={data.restaurantName}
-              location={data.location}
-              topIssues={topIssues}
-              recommendations={recTexts}
-            />
-          </aside>
-        )}
+        {/* ── Right: animated chat column (desktop only) ── */}
+        <aside
+          className={`hidden lg:flex flex-col shrink-0 border-l overflow-hidden transition-all duration-300 ease-in-out ${
+            chatOpen
+              ? 'w-[380px] xl:w-[420px] border-gray-200 dark:border-[#1E1E2E] opacity-100'
+              : 'w-0 border-transparent opacity-0'
+          }`}
+        >
+          <ChatPanel
+            variant="inline"
+            open={chatOpen}
+            onClose={() => setChatOpen(false)}
+            restaurantName={data.restaurantName}
+            location={data.location}
+            topIssues={topIssues}
+            recommendations={recTexts}
+          />
+        </aside>
       </div>
 
       {/* ── Mobile: floating button + drawer (hidden on lg+) ── */}
