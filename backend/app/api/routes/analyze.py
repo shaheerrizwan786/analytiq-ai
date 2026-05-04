@@ -38,6 +38,31 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
 
     sync_store = create_default_sync_store()
 
+    # Fast path: if we already have cached reviews, skip Apify entirely
+    _cached_check = sync_store.get_all_reviews(
+        restaurant_name=body.name.strip(),
+        restaurant_location=body.location.strip(),
+    )
+    if _cached_check:
+        stub = stub_insights_from_reviews(_cached_check)
+        if settings.openai_api_key:
+            _llm = generate_insights(reviews=_cached_check, api_key=settings.openai_api_key,
+                        sentiment=stub.sentiment, sources=stub.sources)
+            insights = _llm if _llm is not None else stub
+        else:
+            insights = stub
+        return AnalyzeResponse(
+            status="completed",
+            total_reviews=len(_cached_check),
+            new_reviews=0,
+            insights=insights,
+            source_stats=["cache_hit"],
+            source_errors=[],
+            dataset_urls=[],
+            extracted_range_from=None,
+            extracted_range_to=None,
+        )
+
     all_new_reviews = []
     dataset_urls: list[str] = []
     range_from_values = []
