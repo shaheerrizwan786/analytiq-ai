@@ -67,6 +67,9 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
   const topIssues = data.issues.map((i) => i.text);
   const recTexts = data.recommendations.map((r) => r.action);
 
+  // Height offset for sticky chat column: navbar (56px) + demo ribbon (36px) when present
+  const stickyTop = mode === 'demo' ? 92 : 56;
+
   return (
     <AppShell>
       {/* Demo mode ribbon */}
@@ -88,97 +91,135 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto py-10 px-4 space-y-8">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-            New analysis
-          </button>
-        )}
-        <DashboardHeader
-          restaurantName={data.restaurantName}
-          location={data.location}
-          totalReviews={data.totalReviews}
-        />
+      {/* Split-pane root: flex when chat open on desktop */}
+      <div className={`${chatOpen ? 'lg:flex lg:items-start' : ''}`}>
 
-        {/* Tab nav */}
-        <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === 'overview'
-                ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-            }`}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab('reviews')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === 'reviews'
-                ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-            }`}
-          >
-            Reviews{data.reviews.length > 0 ? ` (${data.reviews.length})` : ''}
-          </button>
-          <button
-            onClick={() => setActiveTab('trends')}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === 'trends'
-                ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-            }`}
-          >
-            Trends
-          </button>
+        {/* ── Left: scrollable dashboard content ── */}
+        <div className={`${chatOpen ? 'lg:flex-1 lg:min-w-0' : ''}`}>
+          <div className={`${chatOpen ? 'px-4 lg:px-6 py-8 space-y-8' : 'max-w-6xl mx-auto py-10 px-4 space-y-8'}`}>
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+                New analysis
+              </button>
+            )}
+            <DashboardHeader
+              restaurantName={data.restaurantName}
+              location={data.location}
+              totalReviews={data.totalReviews}
+            />
+
+            {/* Tab nav + AI Advisor toggle */}
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setActiveTab('overview')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === 'overview'
+                      ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => setActiveTab('reviews')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === 'reviews'
+                      ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  Reviews{data.reviews.length > 0 ? ` (${data.reviews.length})` : ''}
+                </button>
+                <button
+                  onClick={() => setActiveTab('trends')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === 'trends'
+                      ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                >
+                  Trends
+                </button>
+              </div>
+
+              {/* AI Advisor toggle — desktop only */}
+              <button
+                onClick={() => setChatOpen((o) => !o)}
+                className={`hidden lg:flex items-center gap-1.5 px-3 py-2 mb-[-1px] text-xs font-semibold border-b-2 transition-colors ${
+                  chatOpen
+                    ? 'border-violet-500 text-violet-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-violet-400'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                AI Advisor
+              </button>
+            </div>
+
+            {activeTab === 'overview' ? (
+              <>
+                <PerformanceScoreCard reviews={data.reviews} />
+                <WhatToFixFirst issue={data.topIssue} />
+                <SentimentOverview sentiment={data.sentiment} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <StrengthsList strengths={data.strengths} />
+                  <CustomerIssuesList issues={data.issues} />
+                </div>
+                <AIRecommendationsList recommendations={data.recommendations} />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <RecentReviewsList reviews={data.reviews} onViewAll={() => setActiveTab('reviews')} />
+                  </div>
+                  <div>
+                    <ConfidenceIndicator confidence={data.confidence} />
+                  </div>
+                </div>
+              </>
+            ) : activeTab === 'reviews' ? (
+              <ReviewsTab reviews={data.reviews} />
+            ) : (
+              <TrendsTab reviews={data.reviews} />
+            )}
+          </div>
         </div>
 
-        {activeTab === 'overview' ? (
-          <>
-            <PerformanceScoreCard reviews={data.reviews} />
-
-            <WhatToFixFirst issue={data.topIssue} />
-
-            <SentimentOverview sentiment={data.sentiment} />
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <StrengthsList strengths={data.strengths} />
-              <CustomerIssuesList issues={data.issues} />
-            </div>
-
-            <AIRecommendationsList recommendations={data.recommendations} />
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <RecentReviewsList reviews={data.reviews} onViewAll={() => setActiveTab('reviews')} />
-              </div>
-              <div>
-                <ConfidenceIndicator confidence={data.confidence} />
-              </div>
-            </div>
-          </>
-        ) : activeTab === 'reviews' ? (
-          <ReviewsTab reviews={data.reviews} />
-        ) : (
-          <TrendsTab reviews={data.reviews} />
+        {/* ── Right: sticky inline chat column (desktop only, when open) ── */}
+        {chatOpen && (
+          <aside
+            className="hidden lg:flex flex-col w-[400px] xl:w-[440px] shrink-0 border-l border-[#1E1E2E] sticky overflow-hidden"
+            style={{ top: stickyTop, height: `calc(100vh - ${stickyTop}px)` }}
+          >
+            <ChatPanel
+              variant="inline"
+              open={chatOpen}
+              onClose={() => setChatOpen(false)}
+              restaurantName={data.restaurantName}
+              location={data.location}
+              topIssues={topIssues}
+              recommendations={recTexts}
+            />
+          </aside>
         )}
       </div>
 
-      {/* Floating chat button + panel */}
-      <ChatButton onClick={() => setChatOpen(true)} />
-      <ChatPanel
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        restaurantName={data.restaurantName}
-        location={data.location}
-        topIssues={topIssues}
-        recommendations={recTexts}
-      />
+      {/* ── Mobile: floating button + drawer (hidden on lg+) ── */}
+      <div className="lg:hidden">
+        <ChatButton onClick={() => setChatOpen(true)} />
+        <ChatPanel
+          variant="drawer"
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          restaurantName={data.restaurantName}
+          location={data.location}
+          topIssues={topIssues}
+          recommendations={recTexts}
+        />
+      </div>
     </AppShell>
   );
 }

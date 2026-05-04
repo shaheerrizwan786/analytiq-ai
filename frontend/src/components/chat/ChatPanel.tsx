@@ -22,6 +22,9 @@ interface ChatPanelProps {
   location: string;
   topIssues?: string[];
   recommendations?: string[];
+  /** 'drawer' = fixed overlay with backdrop (default, used on mobile)
+   *  'inline' = fills parent container, no backdrop, no fixed positioning */
+  variant?: 'drawer' | 'inline';
 }
 
 const SUGGESTIONS = [
@@ -403,6 +406,88 @@ function ActiveChat({
   );
 }
 
+// ── Shared inner state + content ────────────────────────────────────────────
+
+function ChatPanelContent({
+  open,
+  onClose,
+  restaurantName,
+  location,
+  topIssues,
+  recommendations,
+  showCloseButton,
+}: {
+  open: boolean;
+  onClose: () => void;
+  restaurantName: string;
+  location: string;
+  topIssues: string[];
+  recommendations: string[];
+  showCloseButton: boolean;
+}) {
+  const [convos, setConvos] = useState<Conversation[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) setConvos(getConversations(restaurantName, location));
+  }, [open, restaurantName, location]);
+
+  const refresh = useCallback(() => {
+    setConvos(getConversations(restaurantName, location));
+  }, [restaurantName, location]);
+
+  const handleNew = useCallback(() => {
+    const dummy = createConversation(restaurantName, location, 'New conversation');
+    refresh();
+    setActiveId(dummy.id);
+  }, [restaurantName, location, refresh]);
+
+  const handleSelect = useCallback((id: string) => setActiveId(id), []);
+
+  const handleBack = useCallback(() => {
+    setActiveId(null);
+    refresh();
+  }, [refresh]);
+
+  const activeConvo = convos.find((c) => c.id === activeId) ?? null;
+
+  return (
+    <div className="flex flex-col h-full relative">
+      {showCloseButton && (
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-[#1E1E2E] transition-colors z-10"
+          aria-label="Close chat panel"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      )}
+      <div className="flex-1 overflow-hidden">
+        {activeConvo ? (
+          <ActiveChat
+            conversation={activeConvo}
+            onBack={handleBack}
+            onNewMessage={refresh}
+            restaurantName={restaurantName}
+            location={location}
+            topIssues={topIssues}
+            recommendations={recommendations}
+          />
+        ) : (
+          <ConversationList
+            convos={convos}
+            onSelect={handleSelect}
+            onNew={handleNew}
+            onDelete={refresh}
+            onArchive={refresh}
+            onUnarchive={refresh}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── ChatPanel (main export) ──────────────────────────────────────────────────
 
 export default function ChatPanel({
@@ -412,88 +497,49 @@ export default function ChatPanel({
   location,
   topIssues = [],
   recommendations = [],
+  variant = 'drawer',
 }: ChatPanelProps) {
-  const [convos, setConvos] = useState<Conversation[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  // ── Inline mode: fills parent, no backdrop ───────────────────────────────
+  if (variant === 'inline') {
+    return (
+      <div className="flex flex-col h-full bg-[#13131F]" role="complementary" aria-label="AI Advisor">
+        <ChatPanelContent
+          open={open}
+          onClose={onClose}
+          restaurantName={restaurantName}
+          location={location}
+          topIssues={topIssues}
+          recommendations={recommendations}
+          showCloseButton={false}
+        />
+      </div>
+    );
+  }
 
-  // Load conversations from localStorage on open
-  useEffect(() => {
-    if (open) {
-      setConvos(getConversations(restaurantName, location));
-    }
-  }, [open, restaurantName, location]);
-
-  const refresh = useCallback(() => {
-    setConvos(getConversations(restaurantName, location));
-  }, [restaurantName, location]);
-
-  const handleNew = useCallback(() => {
-    // Create a placeholder conversation; the first message will set the title
-    const dummy = createConversation(restaurantName, location, 'New conversation');
-    refresh();
-    setActiveId(dummy.id);
-  }, [restaurantName, location, refresh]);
-
-  const handleSelect = useCallback((id: string) => {
-    setActiveId(id);
-  }, []);
-
-  const handleBack = useCallback(() => {
-    setActiveId(null);
-    refresh();
-  }, [refresh]);
-
-  const activeConvo = convos.find((c) => c.id === activeId) ?? null;
-
+  // ── Drawer mode: fixed overlay ───────────────────────────────────────────
   if (!open) return null;
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
-
-      {/* Drawer */}
       <div
         className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[420px] bg-[#13131F] border-l border-[#1E1E2E] flex flex-col shadow-2xl"
         role="dialog"
         aria-label="AI Advisor chat panel"
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-[#1E1E2E] transition-colors z-10"
-          aria-label="Close chat panel"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-
-        {/* Content */}
-        <div className="flex-1 overflow-hidden">
-          {activeConvo ? (
-            <ActiveChat
-              conversation={activeConvo}
-              onBack={handleBack}
-              onNewMessage={refresh}
-              restaurantName={restaurantName}
-              location={location}
-              topIssues={topIssues}
-              recommendations={recommendations}
-            />
-          ) : (
-            <ConversationList
-              convos={convos}
-              onSelect={handleSelect}
-              onNew={handleNew}
-              onDelete={refresh}
-              onArchive={refresh}
-              onUnarchive={refresh}
-            />
-          )}
-        </div>
+        <ChatPanelContent
+          open={open}
+          onClose={onClose}
+          restaurantName={restaurantName}
+          location={location}
+          topIssues={topIssues}
+          recommendations={recommendations}
+          showCloseButton={true}
+        />
       </div>
     </>
   );
