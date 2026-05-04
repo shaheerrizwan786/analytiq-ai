@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     google_api_key: str | None = None
     yelp_api_key: str | None = None
     claude_api_key: str | None = None
+    openai_api_key: str | None = None
 
     @property
     def cors_origin_list(self) -> list[str]:

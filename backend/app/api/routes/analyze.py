@@ -6,6 +6,7 @@ from app.config import get_settings
 from app.schemas import AnalyzeRequest, AnalyzeResponse, ReviewItem
 from app.services.apify_reviews_multi import ApifyReviewsError, fetch_reviews_for_source
 from app.services.insights_stub import stub_insights_from_reviews
+from app.services.llm_service import generate_insights
 from app.services.review_sync_store import create_default_sync_store, reset_all
 from app.services.search_url_resolver import (
     SearchUrlResolverError,
@@ -194,14 +195,26 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
         if window.until is not None:
             range_to_values.append(window.until)
 
-    insights = stub_insights_from_reviews(all_new_reviews)
-
     # Load ALL stored reviews (not just new ones) for the response
     all_stored_reviews = sync_store.get_all_reviews(
         restaurant_name=body.name.strip(),
         restaurant_location=body.location.strip(),
     )
-    insights = stub_insights_from_reviews(all_stored_reviews)
+
+    # Compute sentiment + source counts from all stored reviews (stub is fast/free)
+    stub = stub_insights_from_reviews(all_stored_reviews)
+
+    # Try LLM insights; fall back to stub if key missing or call fails
+    if settings.openai_api_key and all_stored_reviews:
+        llm_result = generate_insights(
+            reviews=all_stored_reviews,
+            api_key=settings.openai_api_key,
+            sentiment=stub.sentiment,
+            sources=stub.sources,
+        )
+        insights = llm_result if llm_result is not None else stub
+    else:
+        insights = stub
 
     review_items = [
         ReviewItem(
