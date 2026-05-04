@@ -17,6 +17,7 @@ export interface AnalyzeResponse {
     sentiment: { positive: number; neutral: number; negative: number };
     top_issues: string[];
     recommendations: string[];
+    strengths: string[];
     sources: { google: number; yelp: number; tripadvisor: number };
   };
   reviews: ReviewItem[];

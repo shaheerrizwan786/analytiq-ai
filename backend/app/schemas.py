@@ -22,6 +22,7 @@ class InsightsPayload(BaseModel):
     sentiment: SentimentBreakdown
     top_issues: list[str]
     recommendations: list[str]
+    strengths: list[str] = []
     sources: SourceCounts
 
 

@@ -34,9 +34,9 @@ class Settings(BaseSettings):
     apify_tripadvisor_discovery_actor_id: str = "maxcopell/tripadvisor"
 
     # Per-source review limits
-    apify_google_max_reviews: int = Field(default=4, ge=1, le=5000)
-    apify_tripadvisor_max_reviews: int = Field(default=3, ge=1, le=5000)
-    apify_yelp_max_reviews: int = Field(default=2, ge=1, le=5000)
+    apify_google_max_reviews: int = Field(default=8, ge=1, le=5000)
+    apify_tripadvisor_max_reviews: int = Field(default=5, ge=1, le=5000)
+    apify_yelp_max_reviews: int = Field(default=5, ge=1, le=5000)
     apify_wait_secs: int = 120
 
     # Yelp is currently blocked (403 on all requests). Disable to avoid wasted time.
