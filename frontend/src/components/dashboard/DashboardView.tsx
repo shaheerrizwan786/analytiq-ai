@@ -13,6 +13,8 @@ import ReviewsTab from './ReviewsTab';
 import PerformanceScoreCard from './PerformanceScoreCard';
 import TrendsTab from './TrendsTab';
 import StrengthsList from './StrengthsList';
+import ChatButton from '@/components/chat/ChatButton';
+import ChatPanel from '@/components/chat/ChatPanel';
 import { useAppMode } from '@/lib/modeContext';
 
 export interface DashboardData {
@@ -59,7 +61,11 @@ interface DashboardViewProps {
 
 export default function DashboardView({ data, onBack }: DashboardViewProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'trends'>('overview');
+  const [chatOpen, setChatOpen] = useState(false);
   const { mode } = useAppMode();
+
+  const topIssues = data.issues.map((i) => i.text);
+  const recTexts = data.recommendations.map((r) => r.action);
 
   return (
     <AppShell>
@@ -162,6 +168,17 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
           <TrendsTab reviews={data.reviews} />
         )}
       </div>
+
+      {/* Floating chat button + panel */}
+      <ChatButton onClick={() => setChatOpen(true)} />
+      <ChatPanel
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        restaurantName={data.restaurantName}
+        location={data.location}
+        topIssues={topIssues}
+        recommendations={recTexts}
+      />
     </AppShell>
   );
 }

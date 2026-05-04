@@ -33,6 +33,26 @@ class ReviewItem(BaseModel):
     date_iso: str | None = None
 
 
+class ChatMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+
+
+class ChatRequest(BaseModel):
+    name: str = Field(..., min_length=1, description="Restaurant name")
+    location: str = Field(..., min_length=1, description="City / region")
+    message: str = Field(..., min_length=1, description="The user's latest message")
+    history: list[ChatMessage] = Field(default_factory=list, description="Prior turns")
+    # Optional pre-computed insights to enrich the context (passed by frontend from last analyze result)
+    top_issues: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    fallback: bool = False  # True if LLM unavailable and a canned response was returned
+
+
 class AnalyzeResponse(BaseModel):
     job_id: str
     status: str
