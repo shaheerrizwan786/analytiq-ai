@@ -48,9 +48,12 @@ export default function CustomerIssuesList({ issues }: CustomerIssuesListProps) 
     <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm p-5">
       <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-4">Customer issues</p>
       {issues.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500 py-2">
-          AI analysis not yet connected — issues will appear here.
-        </p>
+        <div className="flex items-start gap-3 py-2">
+          <span className="text-emerald-500 mt-0.5">✓</span>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            No recurring issues found in recent reviews — customers are happy!
+          </p>
+        </div>
       ) : (
         <div>
           {issues.map((issue, i) => (

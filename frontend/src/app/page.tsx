@@ -85,7 +85,9 @@ function mapToUi(api: AnalyzeResponse, name: string, location: string): Dashboar
         expectedImpacts: firstRec?.impact ? [firstRec.impact] : [],
       };
 
-  const pct = Math.min(90, totalReviews > 0 ? Math.round((totalReviews / 50) * 100) : 0);
+  // Floor at 40% for any successful LLM analysis (even with few reviews), scale up to 90%
+  const basePct = totalReviews > 0 ? Math.min(90, 40 + Math.round((totalReviews / 50) * 50)) : 0;
+  const pct = basePct;
   const level: 'High' | 'Medium' | 'Low' = pct >= 60 ? 'High' : pct >= 30 ? 'Medium' : 'Low';
 
   const reviews = (api.reviews ?? []).map((r) => ({
@@ -337,7 +339,7 @@ function AnalyzeForm({
           <div className="flex justify-center mb-6">
             <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-[#13131F]/80 backdrop-blur-sm border border-gray-100 dark:border-[#1E1E2E] rounded-full px-3 py-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Analysing reviews from Google &middot; TripAdvisor &middot; Yelp
+              Analysing reviews from Google &middot; TripAdvisor
             </div>
           </div>
 
@@ -419,7 +421,7 @@ export default function Home() {
   function handleBack() {
     setMode('live');
     setDashboardData(null);
-    setView('landing');
+    setView('analyze');
   }
 
   if (view === 'dashboard' && dashboardData) {

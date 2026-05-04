@@ -150,14 +150,14 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
               {/* AI Advisor pill toggle — desktop only */}
               <button
                 onClick={() => setChatOpen((o) => !o)}
-                className={`hidden lg:flex items-center gap-2 mb-[-1px] px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 ${
+                className={`hidden lg:flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                   chatOpen
-                    ? 'bg-violet-600 text-white border-violet-600 shadow-sm shadow-violet-500/25'
-                    : 'bg-transparent text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-700 hover:border-violet-500 dark:hover:border-violet-500 hover:text-violet-600 dark:hover:text-violet-400'
+                    ? 'bg-violet-600 text-white shadow-md shadow-violet-500/30'
+                    : 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white shadow-md shadow-violet-500/25 hover:shadow-lg hover:shadow-violet-500/35 hover:scale-105 active:scale-100'
                 }`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                AI Advisor
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                {chatOpen ? 'Close Advisor' : '✦ AI Advisor'}
               </button>
             </div>
 

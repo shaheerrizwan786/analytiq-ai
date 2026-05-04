@@ -59,8 +59,8 @@ function MsgContent({ text }: { text: string }) {
   return (
     <div className="space-y-1.5 text-sm leading-relaxed">
       {lines.map((line, i) => {
-        if (/^###?\s/.test(line)) {
-          const content = line.replace(/^###?\s/, '');
+        if (/^#{1,4}\s/.test(line)) {
+          const content = line.replace(/^#{1,4}\s/, '');
           return <p key={i} className="font-semibold text-gray-900 dark:text-white mt-2">{renderInline(content)}</p>;
         }
         if (/^[-*•]\s/.test(line)) {
