@@ -31,6 +31,8 @@ class ReviewItem(BaseModel):
     text: str
     rating: float | None = None
     date_iso: str | None = None
+    review_context: dict[str, str] | None = None
+    review_detailed_rating: dict[str, float] | None = None
 
 
 class AnalyzeResponse(BaseModel):

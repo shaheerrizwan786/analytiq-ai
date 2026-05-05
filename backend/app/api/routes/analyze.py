@@ -5,6 +5,10 @@ from fastapi import APIRouter, HTTPException
 from app.config import get_settings
 from app.schemas import AnalyzeRequest, AnalyzeResponse, ReviewItem
 from app.services.apify_reviews_multi import ApifyReviewsError, fetch_reviews_for_source
+from app.services.apify_google_reviews import (
+    GoogleReviewsError,
+    fetch_google_reviews_detailed,
+)
 from app.services.insights_stub import stub_insights_from_reviews
 from app.services.review_sync_store import create_default_sync_store, reset_all
 from app.services.search_url_resolver import (
@@ -137,13 +141,84 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
     else:
         source_stats.append("yelp(skipped:disabled)")
 
-    # Fetch order: Google -> TripAdvisor -> (Yelp if enabled)
+    # Fetch order: Google (two-stage) -> TripAdvisor -> (Yelp if enabled)
     for source in ("google", "tripadvisor", "yelp"):
         if source == "yelp" and not settings.apify_yelp_enabled:
             continue
 
         if source == "yelp" and not resolved_yelp_url:
             source_stats.append("yelp(skipped:no_resolved_url)")
+            continue
+
+        # Google uses two-stage extraction
+        if source == "google":
+            cached_google_url = sync_store.get_source_place_link(
+                source="google",
+                restaurant_name=body.name,
+                restaurant_location=body.location,
+            )
+
+            try:
+                google_reviews, google_place_url, google_dataset_urls, google_stats = (
+                    fetch_google_reviews_detailed(
+                        settings,
+                        restaurant_name=body.name.strip(),
+                        restaurant_location=body.location.strip(),
+                        since=None,
+                        cached_place_url=cached_google_url,
+                    )
+                )
+
+                # Cache the place URL
+                if google_place_url and not cached_google_url:
+                    sync_store.upsert_source_place_link(
+                        source="google",
+                        restaurant_name=body.name,
+                        restaurant_location=body.location,
+                        source_url=google_place_url,
+                        source_place_id=google_stats.get("place_id"),
+                    )
+
+                inserted, window = sync_store.upsert_reviews_and_state(
+                    source="google",
+                    restaurant_name=body.name.strip(),
+                    restaurant_location=body.location.strip(),
+                    rows=[
+                        {
+                            "review_key": r.review_key,
+                            "review_date_iso": r.date_iso,
+                            "text": r.text,
+                            "rating": r.rating,
+                            "review_context": r.review_context,
+                            "review_detailed_rating": r.review_detailed_rating,
+                        }
+                        for r in google_reviews
+                    ],
+                )
+
+                source_stats.append(
+                    f"google(returned={google_stats['returned_count']},"
+                    f"inserted={inserted},limit={google_stats['limit']})"
+                )
+
+                if inserted > 0:
+                    all_new_reviews.extend(google_reviews[:inserted])
+                    total_new += inserted
+
+                if google_dataset_urls:
+                    dataset_urls.append(f"google: {google_dataset_urls}")
+                if window.since is not None:
+                    range_from_values.append(window.since)
+                if window.until is not None:
+                    range_to_values.append(window.until)
+
+            except GoogleReviewsError as e:
+                source_errors.append(f"google: {str(e)}")
+            continue
+
+        # TripAdvisor and Yelp use existing multi-source extraction
+        if source == "tripadvisor" and not resolved_tripadvisor_url:
+            source_stats.append("tripadvisor(skipped:no_resolved_url)")
             continue
 
         # Always fetch the latest N reviews (no since filter).
@@ -194,26 +269,41 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
         if window.until is not None:
             range_to_values.append(window.until)
 
-    insights = stub_insights_from_reviews(all_new_reviews)
-
     # Load ALL stored reviews (not just new ones) for the response
     all_stored_reviews = sync_store.get_all_reviews(
         restaurant_name=body.name.strip(),
         restaurant_location=body.location.strip(),
     )
-    insights = stub_insights_from_reviews(all_stored_reviews)
+    insights = stub_insights_from_reviews(all_stored_reviews, include_empty=settings.include_empty_reviews)
 
-    review_items = [
-        ReviewItem(
-            id=r.review_key,
-            source=r.source,
-            text=r.text,
-            rating=r.rating,
-            date_iso=r.date_iso,
-        )
-        for r in all_stored_reviews
-        if r.text
-    ]
+    # Filter reviews based on include_empty_reviews setting
+    if settings.include_empty_reviews:
+        review_items = [
+            ReviewItem(
+                id=r.review_key,
+                source=r.source,
+                text=r.text,
+                rating=r.rating,
+                date_iso=r.date_iso,
+                review_context=r.review_context,
+                review_detailed_rating=r.review_detailed_rating,
+            )
+            for r in all_stored_reviews
+        ]
+    else:
+        review_items = [
+            ReviewItem(
+                id=r.review_key,
+                source=r.source,
+                text=r.text,
+                rating=r.rating,
+                date_iso=r.date_iso,
+                review_context=r.review_context,
+                review_detailed_rating=r.review_detailed_rating,
+            )
+            for r in all_stored_reviews
+            if r.text and r.text.strip()
+        ]
 
     if total_new:
         detail = (

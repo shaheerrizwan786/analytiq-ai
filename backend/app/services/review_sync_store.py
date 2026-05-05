@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -20,6 +21,8 @@ class StoredReview:
     text: str
     rating: float | None
     date_iso: str | None
+    review_context: dict[str, str] | None = None
+    review_detailed_rating: dict[str, float] | None = None
 
 
 class ReviewSyncStore:
@@ -57,6 +60,8 @@ class ReviewSyncStore:
                     review_date_iso TEXT,
                     text TEXT NOT NULL,
                     rating REAL,
+                    review_context TEXT,
+                    review_detailed_rating TEXT,
                     created_at TEXT NOT NULL,
                     UNIQUE(source, restaurant_name, restaurant_location, review_key)
                 )
@@ -197,7 +202,8 @@ class ReviewSyncStore:
         with self._conn() as conn:
             rows = conn.execute(
                 """
-                SELECT source, review_key, text, rating, review_date_iso
+                SELECT source, review_key, text, rating, review_date_iso,
+                       review_context, review_detailed_rating
                 FROM review_items
                 WHERE restaurant_name = ? AND restaurant_location = ?
                 ORDER BY review_date_iso DESC
@@ -211,6 +217,8 @@ class ReviewSyncStore:
                 text=row["text"],
                 rating=row["rating"],
                 date_iso=row["review_date_iso"],
+                review_context=json.loads(row["review_context"]) if row["review_context"] else None,
+                review_detailed_rating=json.loads(row["review_detailed_rating"]) if row["review_detailed_rating"] else None,
             )
             for row in rows
         ]
@@ -246,6 +254,13 @@ class ReviewSyncStore:
                 review_date_iso = row.get("review_date_iso")
                 text = row["text"]
                 rating = row.get("rating")
+                review_context = row.get("review_context")
+                review_detailed_rating = row.get("review_detailed_rating")
+
+                # Serialize JSON fields
+                review_context_json = json.dumps(review_context) if review_context else None
+                review_detailed_rating_json = json.dumps(review_detailed_rating) if review_detailed_rating else None
+
                 try:
                     cur = conn.execute(
                         """
@@ -257,8 +272,10 @@ class ReviewSyncStore:
                             review_date_iso,
                             text,
                             rating,
+                            review_context,
+                            review_detailed_rating,
                             created_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             source,
@@ -268,6 +285,8 @@ class ReviewSyncStore:
                             review_date_iso,
                             text,
                             rating,
+                            review_context_json,
+                            review_detailed_rating_json,
                             self._now_iso(),
                         ),
                     )

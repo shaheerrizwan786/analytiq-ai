@@ -155,13 +155,13 @@ def _build_actor_input(
     return payload
 
 
-def _normalize_from_item(source: str, item: dict) -> list[ReviewNormalized]:
+def _normalize_from_item(source: str, item: dict, include_empty: bool = False) -> list[ReviewNormalized]:
     out: list[ReviewNormalized] = []
 
     text_direct = _to_str(
         _pick_first(item, ["reviewText", "text", "comment", "content", "body", "review"])
     )
-    if text_direct:
+    if text_direct or include_empty:
         rating = _to_float(_pick_first(item, ["rating", "stars", "score", "reviewRating"]))
         date_iso = _to_str(
             _pick_first(
@@ -173,13 +173,13 @@ def _normalize_from_item(source: str, item: dict) -> list[ReviewNormalized]:
         out.append(
             ReviewNormalized(
                 source=source,
-                text=text_direct,
+                text=text_direct or "",
                 rating=rating,
                 date_iso=date_iso,
                 review_key=_make_review_key(
                     source=source,
                     external_id=external_id,
-                    text=text_direct,
+                    text=text_direct or "",
                     date_iso=date_iso,
                     rating=rating,
                 ),
@@ -192,7 +192,7 @@ def _normalize_from_item(source: str, item: dict) -> list[ReviewNormalized]:
             if not isinstance(raw, dict):
                 continue
             text = _to_str(_pick_first(raw, ["reviewText", "text", "comment", "content", "body"]))
-            if not text:
+            if not text and not include_empty:
                 continue
             rating = _to_float(_pick_first(raw, ["rating", "stars", "score", "reviewRating"]))
             date_iso = _to_str(
@@ -205,13 +205,13 @@ def _normalize_from_item(source: str, item: dict) -> list[ReviewNormalized]:
             out.append(
                 ReviewNormalized(
                     source=source,
-                    text=text,
+                    text=text or "",
                     rating=rating,
                     date_iso=date_iso,
                     review_key=_make_review_key(
                         source=source,
                         external_id=external_id,
-                        text=text,
+                        text=text or "",
                         date_iso=date_iso,
                         rating=rating,
                     ),
@@ -276,7 +276,7 @@ def fetch_reviews_for_source(
         if not isinstance(item, dict):
             continue
         raw_items_count += 1
-        rows = _normalize_from_item(source, item)
+        rows = _normalize_from_item(source, item, include_empty=settings.include_empty_reviews)
         normalized_total += len(rows)
         for row in rows:
             if row.review_key in seen_keys:

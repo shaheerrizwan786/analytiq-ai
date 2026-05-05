@@ -25,6 +25,7 @@ class Settings(BaseSettings):
 
     # Review actors
     apify_google_actor_id: str = "compass/crawler-google-places"
+    apify_google_reviews_actor_id: str = "compass/Google-Maps-Reviews-Scraper"
     apify_yelp_actor_id: str = "voyager/yelp-review-scraper"
     apify_tripadvisor_actor_id: str = "maxcopell/tripadvisor-reviews"
 
@@ -45,6 +46,9 @@ class Settings(BaseSettings):
     google_api_key: str | None = None
     yelp_api_key: str | None = None
     claude_api_key: str | None = None
+
+    # Review processing
+    include_empty_reviews: bool = False
 
     @property
     def cors_origin_list(self) -> list[str]:

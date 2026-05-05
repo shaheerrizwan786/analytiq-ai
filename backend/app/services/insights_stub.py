@@ -8,11 +8,22 @@ from app.schemas import InsightsPayload, SentimentBreakdown, SourceCounts
 
 class ReviewLike(Protocol):
     source: str
+    text: str
     rating: float | None
 
 
-def sentiment_from_star_ratings(reviews: list[ReviewLike]) -> SentimentBreakdown:
-    ratings = [r.rating for r in reviews if r.rating is not None]
+def sentiment_from_star_ratings(reviews: list[ReviewLike], include_empty: bool = False) -> SentimentBreakdown:
+    """Calculate sentiment from star ratings.
+
+    Args:
+        reviews: List of reviews with ratings
+        include_empty: If False, exclude reviews without text from sentiment calculation
+    """
+    if include_empty:
+        ratings = [r.rating for r in reviews if r.rating is not None]
+    else:
+        ratings = [r.rating for r in reviews if r.rating is not None and r.text.strip()]
+
     if not ratings:
         return SentimentBreakdown(positive=0.0, neutral=1.0, negative=0.0)
     pos = sum(1 for r in ratings if r >= 4.0)
@@ -26,11 +37,16 @@ def sentiment_from_star_ratings(reviews: list[ReviewLike]) -> SentimentBreakdown
     )
 
 
-def stub_insights_from_reviews(reviews: list[ReviewLike]) -> InsightsPayload:
-    """Populate counts + rough sentiment; issues/recommendations wait for LLM."""
+def stub_insights_from_reviews(reviews: list[ReviewLike], include_empty: bool = False) -> InsightsPayload:
+    """Populate counts + rough sentiment; issues/recommendations wait for LLM.
+
+    Args:
+        reviews: List of reviews to analyze
+        include_empty: If False, exclude reviews without text from sentiment calculation
+    """
     counts = Counter((r.source or "").lower() for r in reviews)
     return InsightsPayload(
-        sentiment=sentiment_from_star_ratings(reviews),
+        sentiment=sentiment_from_star_ratings(reviews, include_empty=include_empty),
         top_issues=[],
         recommendations=[
             "LLM step not connected yet — issues and actions will appear here.",
