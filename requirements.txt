@@ -1,14 +1,21 @@
 # Analytiq AI – Project Requirements
 
-Node.js >= 22.x
-npm >= 10.x
+# ── System prerequisites ──────────────────────────────────────────────────────
+# Python >= 3.11
+# Node.js >= 22.x
+# npm >= 10.x
 
-next
-react
-react-dom
-typescript
-tailwindcss
-@tailwindcss/postcss
-@types/node
-@types/react
-@types/react-dom
+# ── Backend (Python) — see backend/requirements.txt ──────────────────────────
+# fastapi>=0.115.0,<1
+# slowapi>=0.1.9,<1
+# uvicorn[standard]>=0.32.0,<1
+# pydantic-settings>=2.6.0,<3
+# httpx>=0.27.0,<1
+# apify-client>=1.8.0,<3
+# googlemaps>=4.10.0,<5
+# openai>=1.0.0,<2
+
+# ── Frontend (Node) — see frontend/package.json ───────────────────────────────
+# next, react, react-dom, typescript
+# tailwindcss v4, @tailwindcss/postcss
+# @types/node, @types/react, @types/react-dom
