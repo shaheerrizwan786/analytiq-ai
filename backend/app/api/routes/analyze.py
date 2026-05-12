@@ -1,7 +1,9 @@
+import logging
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
+from app.api.dependencies import limiter, verify_api_key
 from app.config import get_settings
 from app.schemas import AnalyzeRequest, AnalyzeResponse, ReviewItem
 from app.services.apify_reviews_multi import ApifyReviewsError, fetch_reviews_for_source
@@ -25,9 +27,24 @@ from app.services.yelp_discovery import YelpDiscoveryError, discover_yelp_busine
 
 router = APIRouter(prefix="/api/v1", tags=["analyze"])
 
+logger = logging.getLogger(__name__)
+
+_PII_CONTEXT_KEYS = frozenset({"authorName", "profileUrl", "authorUrl", "reviewerUrl"})
+
+
+def _strip_pii(review_context: dict | None) -> dict | None:
+    """Remove known PII keys from a review_context dict before persistence."""
+    if not review_context:
+        return review_context
+    return {k: v for k, v in review_context.items() if k not in _PII_CONTEXT_KEYS}
+
+
+
+
 
 @router.post("/restaurants/analyze", response_model=AnalyzeResponse)
-def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
+@limiter.limit("10/minute")
+def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends(verify_api_key)) -> AnalyzeResponse:
     """Incremental sync across Google + TripAdvisor + Yelp using name + location only.
 
     URL resolution order (for URL-based sources):
@@ -240,7 +257,7 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
                             "review_date_iso": r.date_iso,
                             "text": r.text,
                             "rating": r.rating,
-                            "review_context": r.review_context,
+                            "review_context": _strip_pii(r.review_context),
                             "review_detailed_rating": r.review_detailed_rating,
                         }
                         for r in google_reviews
@@ -384,7 +401,8 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
     if source_stats:
         detail = detail + " Stats: " + " | ".join(source_stats)
     if source_errors:
-        detail = detail + " Partial source errors: " + " | ".join(source_errors)
+        logger.warning("Source errors during analysis", extra={"errors": source_errors, "restaurant": body.name})
+        detail = detail + " Some sources were unavailable."
 
     return AnalyzeResponse(
         job_id=str(uuid.uuid4()),
@@ -402,7 +420,7 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
 
 
 @router.post("/admin/reset-review-cache")
-def reset_review_cache() -> dict[str, str]:
+def reset_review_cache(_: None = Depends(verify_api_key)) -> dict[str, str]:
     """One-click cleanup for local test DB tables (reviews + sync state + source links)."""
     reset_all()
     return {"status": "ok", "detail": "review cache cleared"}

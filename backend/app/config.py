@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     # Review processing
     include_empty_reviews: bool = False
 
+    # Internal API key — set to a strong random string in production to protect endpoints
+    internal_api_key: str | None = None
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

@@ -33,7 +33,35 @@ function restaurantKey(email: string) {
   return `auth:restaurant:${email.toLowerCase().trim()}`;
 }
 
+function attemptsKey(email: string) {
+  return `auth:attempts:${email.toLowerCase().trim()}`;
+}
+
 const SESSION_KEY = 'auth:session';
+
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 30_000; // 30 seconds
+
+interface AttemptsRecord {
+  count: number;
+  lockedUntil: number; // epoch ms
+}
+
+function getAttempts(email: string): AttemptsRecord {
+  try {
+    const raw = localStorage.getItem(attemptsKey(email));
+    if (raw) return JSON.parse(raw) as AttemptsRecord;
+  } catch { /* ignore */ }
+  return { count: 0, lockedUntil: 0 };
+}
+
+function setAttempts(email: string, record: AttemptsRecord): void {
+  localStorage.setItem(attemptsKey(email), JSON.stringify(record));
+}
+
+function clearAttempts(email: string): void {
+  localStorage.removeItem(attemptsKey(email));
+}
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
@@ -60,11 +88,24 @@ export async function loginUser(
   if (!raw) {
     return { ok: false, error: 'No account found with this email.' };
   }
+
+  // Brute-force protection
+  const attempts = getAttempts(email);
+  if (attempts.lockedUntil > Date.now()) {
+    const secsLeft = Math.ceil((attempts.lockedUntil - Date.now()) / 1000);
+    return { ok: false, error: `Too many failed attempts. Try again in ${secsLeft}s.` };
+  }
+
   const user: StoredUser = JSON.parse(raw);
   const match = await bcrypt.compare(password, user.passwordHash);
   if (!match) {
+    const newCount = attempts.count + 1;
+    const lockedUntil = newCount >= MAX_ATTEMPTS ? Date.now() + LOCKOUT_MS : 0;
+    setAttempts(email, { count: newCount, lockedUntil });
     return { ok: false, error: 'Incorrect password.' };
   }
+
+  clearAttempts(email);
   return { ok: true };
 }
 

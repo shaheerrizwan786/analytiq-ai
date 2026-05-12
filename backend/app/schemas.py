@@ -1,14 +1,37 @@
-from pydantic import BaseModel, Field
+import re
+from typing import Literal
+
+from pydantic import BaseModel, Field, field_validator
+
+_GOOGLE_MAPS_PREFIXES = (
+    "https://www.google.com/maps/",
+    "https://maps.google.com/",
+    "https://goo.gl/maps/",
+)
 
 
 class AnalyzeRequest(BaseModel):
-    name: str = Field(..., min_length=1, description="Restaurant name")
-    location: str = Field(..., min_length=1, description="City / region")
+    name: str = Field(..., min_length=1, max_length=200, description="Restaurant name")
+    location: str = Field(..., min_length=1, max_length=200, description="City / region")
     # Google Places API fields (optional, from Autocomplete)
-    google_place_id: str | None = Field(None, description="Google Place ID from Autocomplete")
-    google_place_url: str | None = Field(None, description="Google Maps URL")
-    address: str | None = Field(None, description="Full address for cross-platform matching")
+    google_place_id: str | None = Field(None, max_length=200, description="Google Place ID from Autocomplete")
+    google_place_url: str | None = Field(None, max_length=500, description="Google Maps URL")
+    address: str | None = Field(None, max_length=500, description="Full address for cross-platform matching")
     coordinates: dict | None = Field(None, description="{'lat': float, 'lng': float}")
+
+    @field_validator("google_place_id")
+    @classmethod
+    def validate_place_id(cls, v: str | None) -> str | None:
+        if v is not None and not re.fullmatch(r"[A-Za-z0-9_\-]+", v):
+            raise ValueError("Invalid Google Place ID format")
+        return v
+
+    @field_validator("google_place_url")
+    @classmethod
+    def validate_place_url(cls, v: str | None) -> str | None:
+        if v is not None and not any(v.startswith(p) for p in _GOOGLE_MAPS_PREFIXES):
+            raise ValueError("google_place_url must be a Google Maps URL")
+        return v
 
 
 class SentimentBreakdown(BaseModel):
@@ -42,15 +65,15 @@ class ReviewItem(BaseModel):
 
 
 class ChatMessage(BaseModel):
-    role: str  # "user" | "assistant"
-    content: str
+    role: Literal["user", "assistant"]
+    content: str = Field(..., max_length=4000)
 
 
 class ChatRequest(BaseModel):
-    name: str = Field(..., min_length=1, description="Restaurant name")
-    location: str = Field(..., min_length=1, description="City / region")
-    message: str = Field(..., min_length=1, description="The user's latest message")
-    history: list[ChatMessage] = Field(default_factory=list, description="Prior turns")
+    name: str = Field(..., min_length=1, max_length=200, description="Restaurant name")
+    location: str = Field(..., min_length=1, max_length=200, description="City / region")
+    message: str = Field(..., min_length=1, max_length=4000, description="The user's latest message")
+    history: list[ChatMessage] = Field(default_factory=list, description="Prior turns", max_length=50)
     # Optional pre-computed insights to enrich the context (passed by frontend from last analyze result)
     top_issues: list[str] = Field(default_factory=list)
     recommendations: list[str] = Field(default_factory=list)

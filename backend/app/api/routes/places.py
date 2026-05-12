@@ -2,7 +2,8 @@
 Google Places API routes for restaurant search and details.
 """
 import logging
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from app.api.dependencies import limiter, verify_api_key
 from app.services.google_places_service import GooglePlacesService
 from app.schemas import PlaceAutocompleteResponse, PlaceDetailsResponse, PlaceAutocompletePrediction
 
@@ -11,9 +12,12 @@ router = APIRouter(prefix="/places", tags=["places"])
 
 
 @router.get("/autocomplete", response_model=PlaceAutocompleteResponse)
+@limiter.limit("30/minute")
 def autocomplete_places(
-    input: str = Query(..., min_length=1, description="Search query (e.g., 'Pizza Hut Sydney')"),
-    types: str = Query("establishment", description="Place type filter (establishment includes all food businesses)")
+    request: Request,
+    input: str = Query(..., min_length=1, max_length=200, description="Search query (e.g., 'Pizza Hut Sydney')"),
+    types: str = Query("establishment", description="Place type filter (establishment includes all food businesses)"),
+    _: None = Depends(verify_api_key),
 ):
     """
     Search for restaurant suggestions using Google Places Autocomplete.
@@ -38,16 +42,19 @@ def autocomplete_places(
         return PlaceAutocompleteResponse(predictions=formatted_predictions)
 
     except ValueError as e:
-        logger.error(f"Configuration error: {e}")
+        logger.error("Configuration error in autocomplete", extra={"error": type(e).__name__})
         raise HTTPException(status_code=500, detail="Google API key not configured")
     except Exception as e:
-        logger.error(f"Autocomplete error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch autocomplete suggestions: {str(e)}")
+        logger.error("Autocomplete request failed", extra={"error": type(e).__name__})
+        raise HTTPException(status_code=500, detail="Failed to fetch autocomplete suggestions")
 
 
 @router.get("/details", response_model=PlaceDetailsResponse)
+@limiter.limit("30/minute")
 def place_details(
-    place_id: str = Query(..., min_length=1, description="Google Place ID")
+    request: Request,
+    place_id: str = Query(..., min_length=1, max_length=200, description="Google Place ID"),
+    _: None = Depends(verify_api_key),
 ):
     """
     Get detailed information about a specific place.
@@ -62,8 +69,8 @@ def place_details(
         return PlaceDetailsResponse(**details)
 
     except ValueError as e:
-        logger.error(f"Configuration error: {e}")
+        logger.error("Configuration error in place details", extra={"error": type(e).__name__})
         raise HTTPException(status_code=500, detail="Google API key not configured")
     except Exception as e:
-        logger.error(f"Place details error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch place details: {str(e)}")
+        logger.error("Place details request failed", extra={"error": type(e).__name__})
+        raise HTTPException(status_code=500, detail="Failed to fetch place details")

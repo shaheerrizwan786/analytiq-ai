@@ -50,7 +50,10 @@ export async function analyzeRestaurant(
 
   const res = await fetch(`${API_BASE}/api/v1/restaurants/analyze`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': process.env.NEXT_PUBLIC_INTERNAL_API_KEY ?? '',
+    },
     body: JSON.stringify(body),
   });
   if (!res.ok) {

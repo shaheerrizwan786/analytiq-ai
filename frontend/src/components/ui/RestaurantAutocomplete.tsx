@@ -84,7 +84,7 @@ export default function RestaurantAutocomplete({
           : trimmed;
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/places/autocomplete?input=${encodeURIComponent(searchQuery)}`
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/places/autocomplete?input=${encodeURIComponent(searchQuery)}`
         );
         if (response.ok) {
           const data = await response.json();
@@ -113,8 +113,7 @@ export default function RestaurantAutocomplete({
       name: mainText,
       formatted_address: addressParts || description,
       url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(description)}&query_place_id=${placeId}`,
-      latitude: 0,
-      longitude: 0,
+      // latitude / longitude omitted — autocomplete does not return coordinates
     });
   }
 

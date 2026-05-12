@@ -34,7 +34,7 @@ const SUGGESTIONS = [
   'What are our biggest strengths to highlight?',
 ];
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -251,8 +251,10 @@ function ActiveChat({
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const isMounted = useRef(false);
 
   useEffect(() => {
+    if (!isMounted.current) { isMounted.current = true; return; }
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
@@ -279,7 +281,10 @@ function ActiveChat({
     try {
       const res = await fetch(`${API_BASE}/api/v1/restaurants/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': process.env.NEXT_PUBLIC_INTERNAL_API_KEY ?? '',
+        },
         body: JSON.stringify({
           name: restaurantName,
           location,
@@ -289,6 +294,10 @@ function ActiveChat({
           recommendations,
         }),
       });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
 
       const data: { reply: string; fallback: boolean } = await res.json();
       const assistantMsg = addMessage(conversation.id, 'assistant', data.reply);

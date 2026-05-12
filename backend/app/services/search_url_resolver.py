@@ -84,8 +84,15 @@ def _search_candidate_urls(query: str, *, timeout_secs: float = 12.0) -> list[st
     return _extract_links_from_html(r.text)
 
 
+def _sanitise_query_input(s: str) -> str:
+    """Strip characters that could manipulate a search query string."""
+    return re.sub(r"[^A-Za-z0-9 ,'\-\.]", "", s)
+
+
 def resolve_tripadvisor_url_from_search(restaurant_name: str, restaurant_location: str) -> str | None:
-    query = f'site:tripadvisor.com "{restaurant_name}" "{restaurant_location}" Restaurant_Review'
+    name = _sanitise_query_input(restaurant_name)
+    location = _sanitise_query_input(restaurant_location)
+    query = f'site:tripadvisor.com "{name}" "{location}" Restaurant_Review'
     candidates = _search_candidate_urls(query)
     for u in candidates:
         lu = u.lower()
@@ -120,7 +127,9 @@ def _slug_from_yelp_url(url: str) -> str:
 
 def resolve_yelp_url_from_search(restaurant_name: str, restaurant_location: str) -> str | None:
     # Cancel fallback query: only one strict query.
-    query = f'site:yelp.com/biz inurl:/biz/ "{restaurant_name}" "{restaurant_location}"'
+    name = _sanitise_query_input(restaurant_name)
+    location = _sanitise_query_input(restaurant_location)
+    query = f'site:yelp.com/biz inurl:/biz/ "{name}" "{location}"'
     candidates = _search_candidate_urls(query)
 
     target = _norm_text(f"{restaurant_name} {restaurant_location}")

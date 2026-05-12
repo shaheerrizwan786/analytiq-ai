@@ -1,6 +1,7 @@
 """Chat route — conversational AI advisor for a specific restaurant."""
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
 
+from app.api.dependencies import limiter, verify_api_key
 from app.config import get_settings
 from app.schemas import ChatRequest, ChatResponse
 from app.services.chat_service import chat as llm_chat
@@ -18,7 +19,8 @@ _FALLBACK_ERROR = (
 
 
 @router.post("/restaurants/chat", response_model=ChatResponse)
-def restaurant_chat(body: ChatRequest) -> ChatResponse:
+@limiter.limit("60/minute")
+def restaurant_chat(request: Request, body: ChatRequest, _: None = Depends(verify_api_key)) -> ChatResponse:
     settings = get_settings()
 
     if not settings.openai_api_key:
