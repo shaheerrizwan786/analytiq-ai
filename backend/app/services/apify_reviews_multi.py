@@ -253,6 +253,10 @@ def fetch_reviews_for_source(
         yelp_url=yelp_url,
     )
 
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[{source}] Running actor {actor_id} with input: {run_input}")
+
     try:
         run = client.actor(actor_id).call(run_input=run_input, wait_secs=settings.apify_wait_secs)
     except ApifyApiError as e:
@@ -276,6 +280,12 @@ def fetch_reviews_for_source(
         if not isinstance(item, dict):
             continue
         raw_items_count += 1
+
+        # Log first item for debugging
+        if raw_items_count == 1:
+            logger.info(f"[{source}] First item keys: {list(item.keys())}")
+            logger.info(f"[{source}] First item sample: {str(item)[:500]}")
+
         rows = _normalize_from_item(source, item, include_empty=settings.include_empty_reviews)
         normalized_total += len(rows)
         for row in rows:
@@ -292,6 +302,8 @@ def fetch_reviews_for_source(
                 break
         if len(normalized) >= limit:
             break
+
+    logger.info(f"[{source}] Extracted {len(normalized)} reviews from {raw_items_count} items")
 
     stats = {
         "raw_items_count": raw_items_count,

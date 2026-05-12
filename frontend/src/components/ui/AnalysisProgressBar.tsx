@@ -19,39 +19,31 @@ interface AnalysisProgressBarProps {
 
 const STAGE_CONFIG = {
   google: {
-    label: 'Google',
+    label: 'Google Reviews',
     icon: '🔍',
-    color: 'from-blue-500 to-blue-600',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/30',
+    color: 'bg-blue-500',
+    lightColor: 'bg-blue-100',
+    darkColor: 'bg-blue-900/30',
+    textColor: 'text-blue-600',
+    darkTextColor: 'text-blue-400',
   },
   tripadvisor: {
-    label: 'TripAdvisor',
+    label: 'TripAdvisor Reviews',
     icon: '🦉',
-    color: 'from-green-500 to-green-600',
-    bgColor: 'bg-green-500/10',
-    borderColor: 'border-green-500/30',
+    color: 'bg-green-500',
+    lightColor: 'bg-green-100',
+    darkColor: 'bg-green-900/30',
+    textColor: 'text-green-600',
+    darkTextColor: 'text-green-400',
   },
   yelp: {
-    label: 'Yelp',
+    label: 'Yelp Reviews',
     icon: '⭐',
-    color: 'from-red-500 to-red-600',
-    bgColor: 'bg-red-500/10',
-    borderColor: 'border-red-500/30',
-  },
-  insights: {
-    label: 'Insights',
-    icon: '🧠',
-    color: 'from-violet-500 to-violet-600',
-    bgColor: 'bg-violet-500/10',
-    borderColor: 'border-violet-500/30',
-  },
-  complete: {
-    label: 'Complete',
-    icon: '✓',
-    color: 'from-emerald-500 to-emerald-600',
-    bgColor: 'bg-emerald-500/10',
-    borderColor: 'border-emerald-500/30',
+    color: 'bg-red-500',
+    lightColor: 'bg-red-100',
+    darkColor: 'bg-red-900/30',
+    textColor: 'text-red-600',
+    darkTextColor: 'text-red-400',
   },
 };
 
@@ -62,117 +54,135 @@ export default function AnalysisProgressBar({
 }: AnalysisProgressBarProps) {
   const stages: ProgressStage[] = ['google', 'tripadvisor', 'yelp'];
 
-  const getStageIndex = (stage: ProgressStage): number => {
-    return stages.indexOf(stage);
+  const getStatusIcon = (status: StageStatus) => {
+    switch (status) {
+      case 'completed':
+        return '✓';
+      case 'failed':
+      case 'skipped':
+        return '✗';
+      case 'started':
+        return '⋯';
+      default:
+        return '○';
+    }
   };
 
-  const currentIndex = getStageIndex(currentStage);
-  const progressPercentage = currentStage === 'complete'
-    ? 100
-    : ((currentIndex + 1) / stages.length) * 100;
+  const getStatusText = (stage: ProgressStage, status: StageStatus) => {
+    if (status === 'completed') return 'Completed';
+    if (status === 'failed') return 'No page found';
+    if (status === 'skipped') return 'Skipped';
+    if (status === 'started') return 'Searching...';
+    return 'Waiting...';
+  };
+
+  const getProgressPercentage = (status: StageStatus) => {
+    switch (status) {
+      case 'completed':
+        return 100;
+      case 'started':
+        return 50;
+      case 'failed':
+      case 'skipped':
+        return 100;
+      default:
+        return 0;
+    }
+  };
+
+  // Check if we're in insights stage
+  const isInsightsStage = currentStage === 'insights' || currentStage === 'complete';
 
   return (
-    <div className="w-full space-y-8">
-      {/* Progress bar */}
-      <div className="relative pb-20">
-        {/* Background track */}
-        <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-          {/* Active progress */}
-          <div
-            className="h-full bg-gradient-to-r from-violet-500 to-cyan-500 transition-all duration-500 ease-out"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
+    <div className="w-full space-y-6">
+      {/* Individual progress bars for each platform */}
+      <div className="space-y-4">
+        {stages.map((stage) => {
+          const config = STAGE_CONFIG[stage];
+          const status = stageStatuses[stage];
+          const progress = getProgressPercentage(status);
+          const isActive = status === 'started';
+          const isCompleted = status === 'completed';
+          const isFailed = status === 'failed' || status === 'skipped';
 
-        {/* Stage indicators */}
-        <div className="absolute top-0 left-0 w-full flex justify-between items-start -mt-1">
-          {stages.map((stage, index) => {
-            const config = STAGE_CONFIG[stage];
-            const status = stageStatuses[stage];
-            const isActive = currentStage === stage;
-            const isCompleted = status === 'completed';
-            const isFailed = status === 'failed';
-            const isSkipped = status === 'skipped';
-            const isPending = status === 'pending';
-
-            return (
-              <div
-                key={stage}
-                className="flex flex-col items-center flex-1 min-w-0 px-2"
-              >
-                {/* Circle indicator */}
-                <div
-                  className={`
-                    relative z-10 w-10 h-10 rounded-full flex items-center justify-center text-lg
-                    transition-all duration-300 border-2 flex-shrink-0
-                    ${isCompleted ? `bg-gradient-to-br ${config.color} border-transparent shadow-lg` : ''}
-                    ${isActive ? `${config.bgColor} ${config.borderColor} animate-pulse` : ''}
-                    ${isFailed ? 'bg-red-500/10 border-red-500/30' : ''}
-                    ${isSkipped ? 'bg-gray-500/10 border-gray-500/30' : ''}
-                    ${isPending ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700' : ''}
-                  `}
-                >
-                  {isCompleted && <span className="text-white">✓</span>}
-                  {isFailed && <span className="text-red-500 font-bold">✗</span>}
-                  {isSkipped && <span className="text-gray-500">−</span>}
-                  {(isActive || isPending) && <span>{config.icon}</span>}
-                </div>
-
-                {/* Label */}
-                <div className="mt-3 text-center w-full">
-                  <p
-                    className={`
-                      text-xs font-medium transition-colors whitespace-nowrap
-                      ${isActive ? 'text-violet-600 dark:text-violet-400' : ''}
-                      ${isCompleted ? 'text-gray-700 dark:text-gray-300' : ''}
-                      ${isFailed ? 'text-red-600 dark:text-red-400' : ''}
-                      ${isSkipped ? 'text-gray-500 dark:text-gray-500' : ''}
-                      ${isPending ? 'text-gray-400 dark:text-gray-600' : ''}
-                    `}
-                  >
+          return (
+            <div key={stage} className="space-y-2">
+              {/* Stage header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{config.icon}</span>
+                  <span className={`text-sm font-medium ${
+                    isCompleted ? 'text-gray-700 dark:text-gray-300' :
+                    isActive ? `${config.textColor} dark:${config.darkTextColor}` :
+                    isFailed ? 'text-red-600 dark:text-red-400' :
+                    'text-gray-500 dark:text-gray-500'
+                  }`}>
                     {config.label}
-                  </p>
-                  <div className="mt-1.5 min-h-[3rem] flex items-start justify-center">
-                    {isFailed && (
-                      <p className="text-[10px] text-red-500 dark:text-red-400 leading-tight text-center">
-                        No page<br />found
-                      </p>
-                    )}
-                    {isSkipped && !isFailed && (
-                      <p className="text-[10px] text-gray-500 dark:text-gray-500 leading-tight">
-                        Skipped
-                      </p>
-                    )}
-                    {!isFailed && !isSkipped && stageMessages[stage] && (
-                      <p className="text-[10px] text-gray-500 dark:text-gray-500 leading-tight text-center break-words">
-                        {stageMessages[stage]}
-                      </p>
-                    )}
-                  </div>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-medium ${
+                    isCompleted ? 'text-emerald-600 dark:text-emerald-400' :
+                    isActive ? `${config.textColor} dark:${config.darkTextColor}` :
+                    isFailed ? 'text-red-600 dark:text-red-400' :
+                    'text-gray-400 dark:text-gray-600'
+                  }`}>
+                    {getStatusText(stage, status)}
+                  </span>
+                  <span className={`text-sm ${
+                    isCompleted ? 'text-emerald-600 dark:text-emerald-400' :
+                    isFailed ? 'text-red-600 dark:text-red-400' :
+                    'text-gray-400 dark:text-gray-600'
+                  }`}>
+                    {getStatusIcon(status)}
+                  </span>
                 </div>
               </div>
-            );
-          })}
-        </div>
+
+              {/* Progress bar */}
+              <div className="relative h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ease-out ${
+                    isCompleted ? 'bg-emerald-500' :
+                    isFailed ? 'bg-red-500' :
+                    config.color
+                  } ${isActive ? 'animate-pulse' : ''}`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+
+              {/* Status message */}
+              {stageMessages[stage] && (
+                <p className="text-xs text-gray-500 dark:text-gray-500 pl-7">
+                  {stageMessages[stage]}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Current status message */}
-      {currentStage !== 'complete' && (
-        <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-400 -mt-4">
-          <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-          <span>
-            {currentStage === 'google' && 'Fetching Google reviews...'}
-            {currentStage === 'tripadvisor' && 'Fetching TripAdvisor reviews...'}
-            {currentStage === 'yelp' && 'Fetching Yelp reviews...'}
-            {currentStage === 'insights' && 'Generating insights...'}
-          </span>
-        </div>
-      )}
-
-      {currentStage === 'complete' && (
-        <div className="flex items-center justify-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 -mt-4">
-          <span className="text-lg">✓</span>
-          <span className="font-medium">Analysis complete!</span>
+      {/* Overall status */}
+      {isInsightsStage && (
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-center gap-2">
+            {currentStage === 'insights' && (
+              <>
+                <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                <span className="text-sm text-violet-600 dark:text-violet-400 font-medium">
+                  Generating insights...
+                </span>
+              </>
+            )}
+            {currentStage === 'complete' && (
+              <>
+                <span className="text-lg text-emerald-600 dark:text-emerald-400">✓</span>
+                <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                  Analysis complete!
+                </span>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -333,6 +333,16 @@ function AnalyzeForm({
     placeDetails.name === name.trim() &&
     placeDetails.location === location.trim();
 
+  // Process location to keep only last 3 segments (comma-separated)
+  function processLocation(loc: string): string {
+    const segments = loc.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    if (segments.length <= 3) {
+      return loc.trim();
+    }
+    // Keep only last 3 segments
+    return segments.slice(-3).join(', ');
+  }
+
   async function handleSubmit() {
     if (!canSubmit) return;
     setIsLoading(true);
@@ -355,10 +365,13 @@ function AnalyzeForm({
       complete: '',
     });
 
+    // Process location to keep only last 3 segments
+    const processedLocation = processLocation(location);
+
     try {
       const res = await analyzeRestaurantStream(
         name.trim(),
-        location.trim(),
+        processedLocation,
         hasValidPlaceId ? {
           place_id: placeDetails.place_id,
         } : undefined,
@@ -387,9 +400,9 @@ function AnalyzeForm({
         }
       );
 
-      const uiData = mapToUi(res, name.trim(), location.trim());
+      const uiData = mapToUi(res, name.trim(), processedLocation);
       const email = getSession();
-      if (email) saveRestaurant(email, name.trim(), location.trim());
+      if (email) saveRestaurant(email, name.trim(), processedLocation);
       onDone(uiData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');

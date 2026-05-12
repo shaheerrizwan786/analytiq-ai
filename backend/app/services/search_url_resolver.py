@@ -133,26 +133,126 @@ def _sanitise_query_input(s: str) -> str:
     return re.sub(r"[^A-Za-z0-9 ,'\-\.]", "", s)
 
 
+def _remove_duplicate_location_from_name(name: str, location: str) -> tuple[str, str]:
+    """
+    Remove duplicate location terms that appear in both restaurant name and location.
+
+    Example:
+        name: "3 brothersss indian restaurant qvm elizabeth street"
+        location: "elizabeth street, melbourne vic, australia"
+
+        Returns: ("3 brothersss indian restaurant qvm", "melbourne vic, australia")
+
+    Algorithm:
+    1. Split location by comma and get first segment
+    2. Compare last word of name with last word of first location segment (case-insensitive)
+    3. If match, remove from both and continue comparing backwards
+    4. Return cleaned name and location
+    """
+    name_words = name.strip().split()
+    location_parts = [p.strip() for p in location.split(',') if p.strip()]
+
+    if not name_words or not location_parts:
+        return name.strip(), location.strip()
+
+    # Get first segment of location (e.g., "elizabeth street")
+    first_location_segment = location_parts[0]
+    location_segment_words = first_location_segment.split()
+
+    if not location_segment_words:
+        return name.strip(), location.strip()
+
+    # Compare from the end backwards
+    name_idx = len(name_words) - 1
+    loc_idx = len(location_segment_words) - 1
+    matches_found = 0
+
+    while name_idx >= 0 and loc_idx >= 0:
+        name_word = name_words[name_idx].lower().strip('.,;!?')
+        loc_word = location_segment_words[loc_idx].lower().strip('.,;!?')
+
+        if name_word == loc_word:
+            matches_found += 1
+            name_idx -= 1
+            loc_idx -= 1
+        else:
+            break
+
+    # If we found matches, remove them
+    if matches_found > 0:
+        # Remove matched words from name
+        cleaned_name_words = name_words[:name_idx + 1]
+        cleaned_name = ' '.join(cleaned_name_words).strip()
+
+        # Remove first location segment and reconstruct location
+        remaining_location_parts = location_parts[1:]
+        cleaned_location = ', '.join(remaining_location_parts).strip()
+
+        logger.info(
+            f"Removed duplicate location terms: "
+            f"name '{name}' -> '{cleaned_name}', "
+            f"location '{location}' -> '{cleaned_location}'"
+        )
+
+        return cleaned_name or name.strip(), cleaned_location or location.strip()
+
+    return name.strip(), location.strip()
+
+
 def resolve_tripadvisor_url_from_search(
     restaurant_name: str,
     restaurant_location: str,
     settings: Settings | None = None
 ) -> str | None:
     """
-    Search with a single natural-language query and pick organic result at position=1
-    if it matches TripAdvisor Restaurant_Review URL format.
+    Search and find the first TripAdvisor URL that contains 'Restaurant_Review'.
     """
     if settings is None:
         from app.config import get_settings
         settings = get_settings()
 
-    query = f"{_sanitise_query_input(restaurant_name.strip())}, {_sanitise_query_input(restaurant_location.strip())} TripAdvisor"
+    # Remove duplicate location terms from name and location
+    cleaned_name, cleaned_location = _remove_duplicate_location_from_name(
+        restaurant_name.strip(),
+        restaurant_location.strip()
+    )
+
+    # Sanitise inputs for security
+    query = f"{_sanitise_query_input(cleaned_name)}, {_sanitise_query_input(cleaned_location)} TripAdvisor"
 
     try:
         organic_results = _search_with_google(settings, query, max_results=10)
     except SearchUrlResolverError as e:
         logger.warning(f"Google Search failed for TripAdvisor query '{query}': {e}")
         return None
+
+    if not organic_results:
+        logger.warning("TripAdvisor search returned no organicResults for query: %s", query)
+        return None
+
+    # Find first URL that contains tripadvisor domain AND Restaurant_Review
+    for result in organic_results:
+        url = str(result.get("url") or "").strip()
+        title = str(result.get("title") or "")
+
+        if not url:
+            continue
+
+        url_lower = url.lower()
+
+        # Check if URL contains tripadvisor domain
+        if "tripadvisor." not in url_lower:
+            continue
+
+        # Check if URL contains Restaurant_Review pattern
+        if "restaurant_review" not in url_lower:
+            continue
+
+        logger.info("TripAdvisor URL found: title=%s, url=%s", title, url)
+        return url
+
+    logger.warning("No valid TripAdvisor Restaurant_Review URL found in search results for query: %s", query)
+    return None
 
 
 def resolve_yelp_url_from_search(
@@ -161,14 +261,20 @@ def resolve_yelp_url_from_search(
     settings: Settings | None = None
 ) -> str | None:
     """
-    Search with a single natural-language query and pick organic result at position=1
-    if it matches Yelp business URL pattern.
+    Search and find the first Yelp URL that contains '/biz/'.
     """
     if settings is None:
         from app.config import get_settings
         settings = get_settings()
 
-    query = f"{_sanitise_query_input(restaurant_name.strip())}, {_sanitise_query_input(restaurant_location.strip())} Yelp"
+    # Remove duplicate location terms from name and location
+    cleaned_name, cleaned_location = _remove_duplicate_location_from_name(
+        restaurant_name.strip(),
+        restaurant_location.strip()
+    )
+
+    # Sanitise inputs for security
+    query = f"{_sanitise_query_input(cleaned_name)}, {_sanitise_query_input(cleaned_location)} Yelp"
 
     try:
         organic_results = _search_with_google(settings, query, max_results=10)
@@ -180,52 +286,28 @@ def resolve_yelp_url_from_search(
         logger.warning("Yelp search returned no organicResults for query: %s", query)
         return None
 
-    top1 = next((r for r in organic_results if int(r.get("position", 9999)) == 1), None)
-    if not top1:
-        top1 = organic_results[0]
+    # Find first URL that contains yelp domain AND /biz/
+    for result in organic_results:
+        url = str(result.get("url") or "").strip()
+        title = str(result.get("title") or "")
 
-    url = str(top1.get("url") or "").strip()
-    title = str(top1.get("title") or "")
+        if not url:
+            continue
 
-    has_yelp_domain = "yelp." in url.lower()
-    has_biz_token = "/biz/" in url.lower()
+        url_lower = url.lower()
 
-    if url and has_yelp_domain and has_biz_token:
-        logger.info("Yelp top organic result accepted: title=%s, url=%s", title, url)
+        # Check if URL contains yelp domain
+        if "yelp." not in url_lower:
+            continue
+
+        # Check if URL contains /biz/ path
+        if "/biz/" not in url_lower:
+            continue
+
+        logger.info("Yelp URL found: title=%s, url=%s", title, url)
         return url
 
-    logger.warning(
-        "Yelp top organic result rejected (must contain yelp. + /biz/). title=%s, url=%s",
-        title,
-        url,
-    )
-    return None
-
-    if not organic_results:
-        logger.warning("TripAdvisor search returned no organicResults for query: %s", query)
-        return None
-
-    restaurant_review_pattern = re.compile(r'tripadvisor\.[^/]+/.*/Restaurant_Review-g\d+', re.IGNORECASE)
-
-    top1 = next((r for r in organic_results if int(r.get("position", 9999)) == 1), None)
-    if not top1:
-        top1 = organic_results[0]
-
-    url = str(top1.get("url") or "").strip()
-    title = str(top1.get("title") or "")
-
-    has_tripadvisor_domain = "tripadvisor." in url.lower()
-    has_restaurant_review_token = "Restaurant_Review-" in url
-
-    if url and has_tripadvisor_domain and has_restaurant_review_token and restaurant_review_pattern.search(url):
-        logger.info("TripAdvisor top organic result accepted: title=%s, url=%s", title, url)
-        return url
-
-    logger.warning(
-        "TripAdvisor top organic result rejected (must contain tripadvisor domain + Restaurant_Review-). title=%s, url=%s",
-        title,
-        url,
-    )
+    logger.warning("No valid Yelp /biz/ URL found in search results for query: %s", query)
     return None
 
 
