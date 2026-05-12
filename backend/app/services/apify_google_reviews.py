@@ -7,6 +7,7 @@ Stage 2: Use compass/Google-Maps-Reviews-Scraper for detailed reviews
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -71,6 +72,39 @@ def _make_review_key(
     return hashlib.sha256(base.encode("utf-8")).hexdigest()
 
 
+def _clean_restaurant_name_for_search(name: str, location: str) -> str:
+    """Clean restaurant name by removing location suffixes that may confuse search.
+
+    Examples:
+        "Boost Juice Melbourne Central" + "Melbourne" -> "Boost Juice"
+        "KFC Clayton" + "Clayton VIC" -> "KFC"
+    """
+    # Extract city/suburb names from location
+    location_parts = [part.strip() for part in location.split(',')]
+    location_keywords = set()
+
+    for part in location_parts:
+        # Split by spaces and add each word
+        words = part.split()
+        for word in words:
+            # Remove common suffixes like VIC, NSW, Australia
+            if word.upper() not in ('VIC', 'NSW', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT', 'AUSTRALIA'):
+                location_keywords.add(word.lower())
+
+    # Remove location keywords from restaurant name
+    cleaned = name
+    for keyword in location_keywords:
+        # Remove keyword if it appears at the end (case insensitive)
+        pattern = re.compile(rf'\s+{re.escape(keyword)}(\s+\w+)?$', re.IGNORECASE)
+        cleaned = pattern.sub('', cleaned).strip()
+
+    # If we removed too much (less than 2 words left), return original
+    if len(cleaned.split()) < 2 and len(name.split()) >= 2:
+        return name
+
+    return cleaned if cleaned else name
+
+
 def _extract_place_url_from_crawler(
     settings: Settings,
     *,
@@ -86,10 +120,19 @@ def _extract_place_url_from_crawler(
 
     client = ApifyClient(settings.apify_api_key)
 
+    # Clean restaurant name to improve search accuracy
+    cleaned_name = _clean_restaurant_name_for_search(restaurant_name.strip(), restaurant_location.strip())
+
+    # Extract city from location for broader search
+    location_parts = [part.strip() for part in restaurant_location.strip().split(',')]
+    # Use city/suburb (usually second part) instead of full address for broader search
+    city_location = location_parts[1] if len(location_parts) > 1 else location_parts[0]
+
+    # Try with cleaned name first, using city instead of full address
     run_input = {
-        "searchStringsArray": [restaurant_name.strip()],
-        "locationQuery": restaurant_location.strip(),
-        "maxCrawledPlacesPerSearch": 1,
+        "searchStringsArray": [cleaned_name],
+        "locationQuery": city_location.strip(),
+        "maxCrawledPlacesPerSearch": 3,  # Increased from 1 to get more candidates
         "language": "en",
         "scrapePlaceDetailPage": False,
         "maxReviews": 0,
@@ -126,6 +169,27 @@ def _extract_place_url_from_crawler(
         place_id = _to_str(item.get("placeId"))
         if place_url:
             break
+
+    # If no result with cleaned name and names differ, try with original name
+    if not place_url and cleaned_name != restaurant_name.strip():
+        run_input["searchStringsArray"] = [restaurant_name.strip()]
+        run_input["locationQuery"] = city_location.strip()
+        try:
+            run = client.actor(settings.apify_google_actor_id).call(
+                run_input=run_input, wait_secs=settings.apify_wait_secs
+            )
+            if run and run.get("defaultDatasetId"):
+                dataset_id = run["defaultDatasetId"]
+                dataset_url = f"https://console.apify.com/storage/datasets/{dataset_id}"
+                for item in client.dataset(dataset_id).iterate_items():
+                    if not isinstance(item, dict):
+                        continue
+                    place_url = _to_str(item.get("url"))
+                    place_id = _to_str(item.get("placeId"))
+                    if place_url:
+                        break
+        except ApifyApiError:
+            pass  # Keep original error if fallback also fails
 
     return place_url, place_id, dataset_url
 

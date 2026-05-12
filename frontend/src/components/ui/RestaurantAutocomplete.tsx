@@ -16,8 +16,6 @@ interface PlaceDetails {
   name: string;
   formatted_address: string;
   url: string;
-  latitude: number;
-  longitude: number;
 }
 
 interface RestaurantAutocompleteProps {
@@ -112,9 +110,6 @@ export default function RestaurantAutocomplete({
       place_id: placeId,
       name: mainText,
       formatted_address: addressParts || description,
-      url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(description)}&query_place_id=${placeId}`,
-      latitude: 0,
-      longitude: 0,
     });
   }
 

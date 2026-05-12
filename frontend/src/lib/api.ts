@@ -26,10 +26,6 @@ export interface AnalyzeResponse {
 
 export interface PlaceDetails {
   place_id?: string;
-  url?: string;
-  formatted_address?: string;
-  latitude?: number;
-  longitude?: number;
 }
 
 export async function analyzeRestaurant(
@@ -40,12 +36,8 @@ export async function analyzeRestaurant(
   const body: any = { name, location };
 
   // Add place details if available
-  if (placeDetails) {
-    if (placeDetails.place_id) body.google_place_id = placeDetails.place_id;
-    if (placeDetails.url) body.google_place_url = placeDetails.url;
-    if (placeDetails.formatted_address) body.address = placeDetails.formatted_address;
-    if (placeDetails.latitude) body.latitude = placeDetails.latitude;
-    if (placeDetails.longitude) body.longitude = placeDetails.longitude;
+  if (placeDetails?.place_id) {
+    body.google_place_id = placeDetails.place_id;
   }
 
   const res = await fetch(`${API_BASE}/api/v1/restaurants/analyze`, {
@@ -63,4 +55,83 @@ export async function analyzeRestaurant(
     throw new Error(message);
   }
   return res.json();
+}
+
+export interface ProgressUpdate {
+  stage: 'google' | 'tripadvisor' | 'yelp' | 'insights' | 'complete' | 'error';
+  status: 'started' | 'completed' | 'failed' | 'skipped' | 'success';
+  message?: string;
+  result?: AnalyzeResponse;
+}
+
+export async function analyzeRestaurantStream(
+  name: string,
+  location: string,
+  placeDetails?: PlaceDetails,
+  onProgress: (update: ProgressUpdate) => void
+): Promise<AnalyzeResponse> {
+  const body: any = { name, location };
+
+  if (placeDetails?.place_id) {
+    body.google_place_id = placeDetails.place_id;
+  }
+
+  const res = await fetch(`${API_BASE}/api/v1/restaurants/analyze/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    let message = text || `Request failed (${res.status})`;
+    try {
+      const json = JSON.parse(text);
+      if (json?.detail) message = json.detail;
+    } catch { /* not JSON, use raw text */ }
+    throw new Error(message);
+  }
+
+  const reader = res.body?.getReader();
+  const decoder = new TextDecoder();
+
+  if (!reader) {
+    throw new Error('Response body is not readable');
+  }
+
+  let finalResult: AnalyzeResponse | null = null;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          try {
+            const update = JSON.parse(data) as ProgressUpdate;
+            onProgress(update);
+
+            if (update.stage === 'complete' && update.result) {
+              finalResult = update.result;
+            }
+          } catch (e) {
+            console.error('Failed to parse SSE data:', e);
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (!finalResult) {
+    throw new Error('Analysis completed but no result received');
+  }
+
+  return finalResult;
 }

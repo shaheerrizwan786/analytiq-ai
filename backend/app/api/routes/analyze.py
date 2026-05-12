@@ -1,6 +1,9 @@
 import uuid
+import logging
 
 from fastapi import APIRouter, HTTPException
+
+logger = logging.getLogger(__name__)
 
 from app.config import get_settings
 from app.schemas import AnalyzeRequest, AnalyzeResponse, ReviewItem
@@ -21,14 +24,13 @@ from app.services.tripadvisor_discovery import (
     TripAdvisorDiscoveryError,
     discover_tripadvisor_place_url,
 )
-from app.services.yelp_discovery import YelpDiscoveryError, discover_yelp_business_url
 
 router = APIRouter(prefix="/api/v1", tags=["analyze"])
 
 
 @router.post("/restaurants/analyze", response_model=AnalyzeResponse)
 def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
-    """Incremental sync across Google + TripAdvisor + Yelp using name + location only.
+    """Incremental sync across Google + TripAdvisor using name + location only.
 
     URL resolution order (for URL-based sources):
     - cache -> search resolver -> discovery actor fallback
@@ -93,16 +95,24 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
         restaurant_name=body.name,
         restaurant_location=body.location,
     )
-    if not resolved_tripadvisor_url:
-        # Use address for better search accuracy if available
-        search_name = f"{body.name} {body.address}" if body.address else body.name
+    if resolved_tripadvisor_url:
+        logger.info(f"TripAdvisor URL from cache: {resolved_tripadvisor_url}")
+    else:
+        # Search using restaurant name and location separately
+        logger.info(f"Trying TripAdvisor search resolver for: {body.name}, {body.location}")
         try:
-            t_search_url = resolve_tripadvisor_url_from_search(search_name.strip(), body.location.strip())
+            t_search_url = resolve_tripadvisor_url_from_search(
+                body.name.strip(),
+                body.location.strip(),
+                settings
+            )
         except SearchUrlResolverError as e:
+            logger.warning(f"TripAdvisor search resolver failed: {str(e)}")
             source_errors.append(f"tripadvisor-search: {str(e)}")
             t_search_url = None
 
         if t_search_url:
+            logger.info(f"TripAdvisor URL from search resolver: {t_search_url}")
             resolved_tripadvisor_url = t_search_url
             sync_store.upsert_source_place_link(
                 source="tripadvisor",
@@ -111,6 +121,7 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
                 source_url=t_search_url,
             )
         else:
+            logger.info("Falling back to TripAdvisor discovery actor")
             try:
                 t_url, t_place_id, t_dataset = discover_tripadvisor_place_url(
                     settings,
@@ -120,6 +131,7 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
                 if t_dataset:
                     dataset_urls.append(f"tripadvisor-discovery: {t_dataset}")
                 if t_url:
+                    logger.info(f"TripAdvisor URL from discovery actor: {t_url}")
                     resolved_tripadvisor_url = t_url
                     sync_store.upsert_source_place_link(
                         source="tripadvisor",
@@ -129,79 +141,60 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
                         source_place_id=t_place_id,
                     )
                 else:
+                    logger.warning("TripAdvisor discovery actor found no matching place URL")
                     source_errors.append("tripadvisor-discovery: no matching place URL found")
             except TripAdvisorDiscoveryError as e:
+                logger.error(f"TripAdvisor discovery actor failed: {str(e)}")
                 source_errors.append(f"tripadvisor-discovery: {str(e)}")
 
-    # Resolve Yelp URL (cache -> search -> discovery fallback)
+    # Resolve Yelp URL (search only; no fallback)
     resolved_yelp_url = None
-    if settings.apify_yelp_enabled:
-        resolved_yelp_url = sync_store.get_source_place_link(
+    logger.info(f"Trying Yelp search resolver for: {body.name}, {body.location}")
+    try:
+        y_search_url = resolve_yelp_url_from_search(
+            body.name.strip(),
+            body.location.strip(),
+            settings,
+        )
+    except SearchUrlResolverError as e:
+        logger.warning(f"Yelp search resolver failed: {str(e)}")
+        source_errors.append(f"yelp-search: {str(e)}")
+        y_search_url = None
+
+    if y_search_url:
+        logger.info(f"Yelp URL from search resolver: {y_search_url}")
+        resolved_yelp_url = y_search_url
+        sync_store.upsert_source_place_link(
             source="yelp",
             restaurant_name=body.name,
             restaurant_location=body.location,
+            source_url=y_search_url,
         )
-        if not resolved_yelp_url:
-            # Use address for better search accuracy if available
-            search_name = f"{body.name} {body.address}" if body.address else body.name
-            try:
-                y_search_url = resolve_yelp_url_from_search(search_name.strip(), body.location.strip())
-            except SearchUrlResolverError as e:
-                source_errors.append(f"yelp-search: {str(e)}")
-                y_search_url = None
-
-            if y_search_url and "yelp.com/biz/" in y_search_url.lower():
-                resolved_yelp_url = y_search_url
-                sync_store.upsert_source_place_link(
-                    source="yelp",
-                    restaurant_name=body.name,
-                    restaurant_location=body.location,
-                    source_url=y_search_url,
-                )
-            else:
-                try:
-                    y_url, y_place_id, y_dataset = discover_yelp_business_url(
-                        settings,
-                        restaurant_name=body.name.strip(),
-                        restaurant_location=body.location.strip(),
-                    )
-                    if y_dataset:
-                        dataset_urls.append(f"yelp-discovery: {y_dataset}")
-                    if y_url:
-                        resolved_yelp_url = y_url
-                        sync_store.upsert_source_place_link(
-                            source="yelp",
-                            restaurant_name=body.name,
-                            restaurant_location=body.location,
-                            source_url=y_url,
-                            source_place_id=y_place_id,
-                        )
-                    else:
-                        source_errors.append("yelp-discovery: no matching business URL found")
-                except YelpDiscoveryError as e:
-                    source_errors.append(f"yelp-discovery: {str(e)}")
     else:
-        source_stats.append("yelp(skipped:disabled)")
+        logger.warning("No Yelp /biz/ URL found from top organic result. Skip Yelp reviews.")
+        source_stats.append("yelp(skipped:no_resolved_url)")
 
-    # Fetch order: Google (two-stage) -> TripAdvisor -> (Yelp if enabled)
+    logger.info(
+        "Analyze request place_id payload: google_place_id_present=%s, google_place_id=%s",
+        bool(body.google_place_id),
+        body.google_place_id if body.google_place_id else None,
+    )
+
+    # Fetch order: Google (two-stage) -> TripAdvisor -> Yelp
     for source in ("google", "tripadvisor", "yelp"):
-        if source == "yelp" and not settings.apify_yelp_enabled:
-            continue
 
         if source == "yelp" and not resolved_yelp_url:
-            source_stats.append("yelp(skipped:no_resolved_url)")
             continue
 
         # Google uses two-stage extraction
         if source == "google":
             # Prioritize Google Places API data from request body
-            if body.google_place_url:
-                # Use URL directly from Places Autocomplete
-                cached_google_url = body.google_place_url
-            elif body.google_place_id:
+            if body.google_place_id:
+                logger.info("Using request google_place_id for Google fetch: %s", body.google_place_id)
                 # Construct URL from place_id
                 cached_google_url = f"https://www.google.com/maps/place/?q=place_id:{body.google_place_id}"
             else:
+                logger.info("No google_place_id in request body; falling back to cached Google URL")
                 # Fallback to cached URL from previous runs
                 cached_google_url = sync_store.get_source_place_link(
                     source="google",

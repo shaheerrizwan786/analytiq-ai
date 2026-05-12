@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
-from app.api.routes import analyze, chat, health, places
+from app.api.routes import analyze, analyze_stream, chat, health, places
 from app.config import get_settings
 
 
@@ -49,6 +49,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(analyze.router)
     app.include_router(chat.router)
+    app.include_router(analyze_stream.router)
     app.include_router(places.router)
     return app
 

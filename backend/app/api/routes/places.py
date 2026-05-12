@@ -5,6 +5,11 @@ import logging
 from fastapi import APIRouter, HTTPException, Query
 from app.services.google_places_service import GooglePlacesService
 from app.schemas import PlaceAutocompleteResponse, PlaceDetailsResponse, PlaceAutocompletePrediction
+from app.services.apify_google_search_resolver import (
+    resolve_tripadvisor_url_from_apify_search,
+    resolve_yelp_url_from_apify_search,
+)
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/places", tags=["places"])
@@ -67,3 +72,67 @@ def place_details(
     except Exception as e:
         logger.error(f"Place details error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch place details: {str(e)}")
+
+
+@router.get("/resolve-urls")
+def resolve_platform_urls(
+    place_id: str = Query(..., min_length=1, description="Google Place ID from autocomplete")
+):
+    """
+    Resolve Tripadvisor and Yelp URLs for a restaurant using Google Place ID.
+
+    Returns the specific URLs for the restaurant on both platforms.
+    """
+    settings = get_settings()
+    result = {
+        "tripadvisor_url": None,
+        "yelp_url": None,
+        "errors": []
+    }
+
+    try:
+        # Get place details from Google Places API
+        service = GooglePlacesService()
+        place_details = service.get_place_details(place_id=place_id)
+
+        name = place_details.get('name', '')
+        address = place_details.get('address', '')
+
+        if not name:
+            result["errors"].append("Could not retrieve restaurant name from Google Places")
+            return result
+
+        # Extract city/location from address
+        location = address.split(',')[-2].strip() if ',' in address else address
+
+        logger.info(f"Resolving URLs for: {name} at {location}")
+
+        # Resolve TripAdvisor URL using Apify Google Search
+        try:
+            tripadvisor_url = resolve_tripadvisor_url_from_apify_search(name, location)
+            if tripadvisor_url:
+                result["tripadvisor_url"] = tripadvisor_url
+                logger.info(f"Found TripAdvisor URL: {tripadvisor_url}")
+            else:
+                result["errors"].append("tripadvisor: no matching place found")
+        except Exception as e:
+            logger.error(f"TripAdvisor search failed: {e}")
+            result["errors"].append(f"tripadvisor: {str(e)}")
+
+        # Resolve Yelp URL using Apify Google Search
+        try:
+            yelp_url = resolve_yelp_url_from_apify_search(name, location)
+            if yelp_url:
+                result["yelp_url"] = yelp_url
+                logger.info(f"Found Yelp URL: {yelp_url}")
+            else:
+                result["errors"].append("yelp: no matching business found")
+        except Exception as e:
+            logger.error(f"Yelp search failed: {e}")
+            result["errors"].append(f"yelp: {str(e)}")
+
+    except Exception as e:
+        logger.error(f"Error resolving platform URLs: {e}")
+        result["errors"].append(f"general: {str(e)}")
+
+    return result

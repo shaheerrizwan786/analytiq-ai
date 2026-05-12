@@ -100,9 +100,17 @@ export default function RecentReviewsList({ reviews, onViewAll }: RecentReviewsL
       rangeStart = new Date(latestDate.getFullYear(), latestDate.getMonth(), 1, 0, 0, 0, 0);
     }
 
-    return reviews.filter((r) => {
+    const inRange = reviews.filter((r) => {
       if (r.date_iso && new Date(r.date_iso) < rangeStart) return false;
       return true;
+    });
+
+    // Sort by date descending (newest first)
+    return inRange.sort((a, b) => {
+      if (!a.date_iso && !b.date_iso) return 0;
+      if (!a.date_iso) return 1;
+      if (!b.date_iso) return -1;
+      return new Date(b.date_iso).getTime() - new Date(a.date_iso).getTime();
     });
   }, [reviews, timeRange, latestDate]);
 

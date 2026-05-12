@@ -6,9 +6,6 @@ class AnalyzeRequest(BaseModel):
     location: str = Field(..., min_length=1, description="City / region")
     # Google Places API fields (optional, from Autocomplete)
     google_place_id: str | None = Field(None, description="Google Place ID from Autocomplete")
-    google_place_url: str | None = Field(None, description="Google Maps URL")
-    address: str | None = Field(None, description="Full address for cross-platform matching")
-    coordinates: dict | None = Field(None, description="{'lat': float, 'lng': float}")
 
 
 class SentimentBreakdown(BaseModel):
