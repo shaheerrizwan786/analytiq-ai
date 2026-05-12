@@ -8,7 +8,8 @@ import RestaurantAutocomplete from '@/components/ui/RestaurantAutocomplete';
 import AppShell from '@/components/layout/AppShell';
 import AuthModal from '@/components/auth/AuthModal';
 import DashboardView, { DashboardData } from '@/components/dashboard/DashboardView';
-import { analyzeRestaurant, AnalyzeResponse } from '@/lib/api';
+import AnalysisProgressBar, { ProgressStage, StageStatus } from '@/components/ui/AnalysisProgressBar';
+import { analyzeRestaurantStream, AnalyzeResponse, ProgressUpdate } from '@/lib/api';
 import { getSession, getSavedRestaurant, saveRestaurant } from '@/lib/auth';
 import { useAppMode } from '@/lib/modeContext';
 import { demoDashboardData } from '@/lib/demoData';
@@ -293,11 +294,26 @@ function AnalyzeForm({
   const [error, setError] = useState<string | null>(null);
   const [placeDetails, setPlaceDetails] = useState<{
     place_id: string;
-    url: string;
-    formatted_address: string;
-    latitude: number;
-    longitude: number;
+    name: string;
+    location: string;
   } | null>(null);
+
+  // Progress tracking
+  const [currentStage, setCurrentStage] = useState<ProgressStage>('google');
+  const [stageStatuses, setStageStatuses] = useState<Record<ProgressStage, StageStatus>>({
+    google: 'pending',
+    tripadvisor: 'pending',
+    yelp: 'pending',
+    insights: 'pending',
+    complete: 'pending',
+  });
+  const [stageMessages, setStageMessages] = useState<Record<ProgressStage, string>>({
+    google: '',
+    tripadvisor: '',
+    yelp: '',
+    insights: '',
+    complete: '',
+  });
 
   useEffect(() => {
     const email = getSession();
@@ -312,22 +328,65 @@ function AnalyzeForm({
 
   const canSubmit = name.trim().length > 0 && location.trim().length > 0;
 
+  // Check if current input matches the selected place details
+  const hasValidPlaceId = placeDetails &&
+    placeDetails.name === name.trim() &&
+    placeDetails.location === location.trim();
+
   async function handleSubmit() {
     if (!canSubmit) return;
     setIsLoading(true);
     setError(null);
+
+    // Reset progress
+    setCurrentStage('google');
+    setStageStatuses({
+      google: 'pending',
+      tripadvisor: 'pending',
+      yelp: 'pending',
+      insights: 'pending',
+      complete: 'pending',
+    });
+    setStageMessages({
+      google: '',
+      tripadvisor: '',
+      yelp: '',
+      insights: '',
+      complete: '',
+    });
+
     try {
-      const res = await analyzeRestaurant(
+      const res = await analyzeRestaurantStream(
         name.trim(),
         location.trim(),
-        placeDetails ? {
-          google_place_id: placeDetails.place_id,
-          google_place_url: placeDetails.url,
-          address: placeDetails.formatted_address,
-          latitude: placeDetails.latitude,
-          longitude: placeDetails.longitude,
-        } : undefined
+        hasValidPlaceId ? {
+          place_id: placeDetails.place_id,
+        } : undefined,
+        (update: ProgressUpdate) => {
+          // Update progress based on SSE events
+          if (update.stage === 'error') {
+            setError(update.message || 'An error occurred');
+            return;
+          }
+
+          setCurrentStage(update.stage);
+
+          // Update stage status
+          setStageStatuses(prev => ({
+            ...prev,
+            [update.stage]: update.status,
+          }));
+
+          // Update stage message
+          if (update.message) {
+            setStageMessages(prev => ({
+              ...prev,
+              [update.stage]: update.message,
+            }));
+          }
+        }
       );
+
       const uiData = mapToUi(res, name.trim(), location.trim());
       const email = getSession();
       if (email) saveRestaurant(email, name.trim(), location.trim());
@@ -336,6 +395,23 @@ function AnalyzeForm({
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  // Handle manual input changes - clear place_id if user modifies the input
+  function handleNameChange(value: string) {
+    setName(value);
+    // Clear place details if user manually changes the name
+    if (placeDetails && value.trim() !== placeDetails.name) {
+      setPlaceDetails(null);
+    }
+  }
+
+  function handleLocationChange(value: string) {
+    setLocation(value);
+    // Clear place details if user manually changes the location
+    if (placeDetails && value.trim() !== placeDetails.location) {
+      setPlaceDetails(null);
     }
   }
 
@@ -384,7 +460,7 @@ function AnalyzeForm({
                 label="Restaurant Name"
                 placeholder="e.g. Boost Juice"
                 value={name}
-                onChange={setName}
+                onChange={handleNameChange}
                 contextQuery={location}
                 dropdownDirection="up"
                 onPlaceSelect={(details) => {
@@ -392,10 +468,8 @@ function AnalyzeForm({
                   setLocation(details.formatted_address);
                   setPlaceDetails({
                     place_id: details.place_id,
-                    url: details.url,
-                    formatted_address: details.formatted_address,
-                    latitude: details.latitude,
-                    longitude: details.longitude,
+                    name: details.name,
+                    location: details.formatted_address,
                   });
                 }}
                 isDisabled={isLoading}
@@ -404,21 +478,31 @@ function AnalyzeForm({
                 label="Location / Address"
                 placeholder="e.g. Monash Clayton"
                 value={location}
-                onChange={setLocation}
+                onChange={handleLocationChange}
                 contextQuery={name}
                 onPlaceSelect={(details) => {
                   setName(details.name);
                   setLocation(details.formatted_address);
                   setPlaceDetails({
                     place_id: details.place_id,
-                    url: details.url,
-                    formatted_address: details.formatted_address,
-                    latitude: details.latitude,
-                    longitude: details.longitude,
+                    name: details.name,
+                    location: details.formatted_address,
                   });
                 }}
                 isDisabled={isLoading}
               />
+
+              {/* Progress bar - shown when loading */}
+              {isLoading && (
+                <div className="pt-4 pb-2">
+                  <AnalysisProgressBar
+                    currentStage={currentStage}
+                    stageStatuses={stageStatuses}
+                    stageMessages={stageMessages}
+                  />
+                </div>
+              )}
+
               <div className="pt-2">
                 <Button onClick={handleSubmit} isDisabled={!canSubmit} isLoading={isLoading} size="lg" fullWidth>
                   Connect &amp; Analyse

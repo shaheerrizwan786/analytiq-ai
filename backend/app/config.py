@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     apify_tripadvisor_actor_id: str = "maxcopell/tripadvisor-reviews"
 
     # Discovery actors (resolve URL from name + location)
+    apify_google_search_actor_id: str = "apify/google-search-scraper"
     apify_yelp_discovery_actor_id: str = "tri_angle/yelp-scraper"
     apify_yelp_discovery_search_limit: int = Field(default=3, ge=1, le=20)
     apify_tripadvisor_discovery_actor_id: str = "maxcopell/tripadvisor"
@@ -41,7 +42,7 @@ class Settings(BaseSettings):
     apify_wait_secs: int = 120
 
     # Yelp is currently blocked (403 on all requests). Disable to avoid wasted time.
-    apify_yelp_enabled: bool = False
+    apify_yelp_enabled: bool = True
 
     google_api_key: str | None = None
     yelp_api_key: str | None = None
