@@ -61,6 +61,8 @@ GOOGLE_API_KEY=         # required for Places autocomplete
 
 ### 4. Start all servers
 
+The scripts handle pre-flight checks and launch both servers for you:
+
 **Windows:**
 ```powershell
 .\start.ps1
@@ -75,6 +77,28 @@ Opens (or launches in background):
 - **Frontend** → http://localhost:3000
 - **Backend API** → http://localhost:8000
 - **API docs (Swagger)** → http://localhost:8000/docs
+
+#### Manual start (if you prefer)
+
+Backend — open one terminal:
+```powershell
+# Windows
+.\.venv\Scripts\Activate.ps1
+cd backend
+uvicorn app.main:app --reload --port 8000
+```
+```bash
+# macOS / Linux
+source .venv/bin/activate
+cd backend
+uvicorn app.main:app --reload --port 8000
+```
+
+Frontend — open a second terminal:
+```bash
+cd frontend
+npm run dev
+```
 
 ---
 
