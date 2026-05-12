@@ -222,7 +222,7 @@ function LandingPage({
 
           {/* Subtext */}
           <p className="mt-6 text-base sm:text-lg text-gray-400 max-w-xl mx-auto leading-relaxed">
-            Analytiq aggregates reviews from Google, TripAdvisor, and Yelp &mdash; then surfaces
+            Analytiq aggregates reviews from Google and TripAdvisor &mdash; then surfaces
             exactly what to fix and what to celebrate.
           </p>
 
@@ -280,9 +280,11 @@ function LandingPage({
 function AnalyzeForm({
   onBack,
   onDone,
+  onDemo,
 }: {
   onBack: () => void;
   onDone: (data: DashboardData) => void;
+  onDemo?: () => void;
 }) {
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
@@ -378,6 +380,15 @@ function AnalyzeForm({
                 <Button onClick={handleSubmit} isDisabled={!canSubmit} isLoading={isLoading} size="lg" fullWidth>
                   Connect &amp; Analyse
                 </Button>
+                {onDemo && (
+                  <button
+                    type="button"
+                    onClick={onDemo}
+                    className="mt-3 w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-violet-500 dark:hover:text-violet-400 transition-colors"
+                  >
+                    Or try with demo data →
+                  </button>
+                )}
               </div>
             </div>
           </Card>
@@ -429,7 +440,7 @@ export default function Home() {
   }
 
   if (view === 'analyze') {
-    return <AnalyzeForm onBack={() => setView('landing')} onDone={handleAnalysisDone} />;
+    return <AnalyzeForm onBack={() => setView('landing')} onDone={handleAnalysisDone} onDemo={handleViewDemo} />;
   }
 
   return (

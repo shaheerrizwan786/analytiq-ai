@@ -51,16 +51,28 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
             insights = _llm if _llm is not None else stub
         else:
             insights = stub
+        review_items_cached = [
+            ReviewItem(
+                id=r.review_key,
+                source=r.source,
+                text=r.text,
+                rating=r.rating,
+                date_iso=r.date_iso,
+            )
+            for r in _cached_check
+            if r.text
+        ]
         return AnalyzeResponse(
+            job_id=str(uuid.uuid4()),
             status="completed",
-            total_reviews=len(_cached_check),
-            new_reviews=0,
+            restaurant_name=body.name.strip(),
+            restaurant_location=body.location.strip(),
             insights=insights,
-            source_stats=["cache_hit"],
-            source_errors=[],
-            dataset_urls=[],
+            reviews=review_items_cached,
+            detail=f"Served from cache: {len(_cached_check)} reviews for '{body.name.strip()}'.",
             extracted_range_from=None,
             extracted_range_to=None,
+            new_reviews_count=0,
         )
 
     all_new_reviews = []

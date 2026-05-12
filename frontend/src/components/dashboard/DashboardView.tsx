@@ -164,6 +164,12 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
             {activeTab === 'overview' ? (
               <>
                 <PerformanceScoreCard reviews={data.reviews} />
+                {data.totalReviews === 0 ? (
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/20 p-5 text-sm text-amber-800 dark:text-amber-300">
+                    <strong>Restaurant not found.</strong> No reviews were found on Google Maps or TripAdvisor for &ldquo;{data.restaurantName}&rdquo; in {data.location}. Please check the spelling and try again.
+                  </div>
+                ) : (
+                  <>
                 <WhatToFixFirst issue={data.topIssue} />
                 <SentimentOverview sentiment={data.sentiment} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -179,6 +185,8 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                     <ConfidenceIndicator confidence={data.confidence} />
                   </div>
                 </div>
+                  </>
+                )}
               </>
             ) : activeTab === 'reviews' ? (
               <ReviewsTab reviews={data.reviews} />
