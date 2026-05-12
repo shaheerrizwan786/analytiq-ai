@@ -4,6 +4,11 @@ from pydantic import BaseModel, Field
 class AnalyzeRequest(BaseModel):
     name: str = Field(..., min_length=1, description="Restaurant name")
     location: str = Field(..., min_length=1, description="City / region")
+    # Google Places API fields (optional, from Autocomplete)
+    google_place_id: str | None = Field(None, description="Google Place ID from Autocomplete")
+    google_place_url: str | None = Field(None, description="Google Maps URL")
+    address: str | None = Field(None, description="Full address for cross-platform matching")
+    coordinates: dict | None = Field(None, description="{'lat': float, 'lng': float}")
 
 
 class SentimentBreakdown(BaseModel):
@@ -62,3 +67,35 @@ class AnalyzeResponse(BaseModel):
         default=0,
         description="Count of newly persisted reviews in this run.",
     )
+
+
+# Google Places API schemas
+class PlaceAutocompletePrediction(BaseModel):
+    place_id: str
+    description: str
+    structured_formatting: dict | None = None
+    types: list[str] = []
+
+
+class PlaceAutocompleteResponse(BaseModel):
+    predictions: list[PlaceAutocompletePrediction]
+
+
+class PlaceCoordinates(BaseModel):
+    lat: float
+    lng: float
+
+
+class PlaceDetailsResponse(BaseModel):
+    place_id: str
+    name: str
+    address: str | None = None
+    coordinates: PlaceCoordinates | None = None
+    rating: float | None = None
+    total_ratings: int | None = None
+    google_maps_url: str | None = None
+    website: str | None = None
+    phone: str | None = None
+    price_level: int | None = None
+    types: list[str] = []
+    opening_hours: list[str] = []

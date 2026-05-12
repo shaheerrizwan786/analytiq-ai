@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import RestaurantAutocomplete from '@/components/ui/RestaurantAutocomplete';
 import AppShell from '@/components/layout/AppShell';
 import AuthModal from '@/components/auth/AuthModal';
 import DashboardView, { DashboardData } from '@/components/dashboard/DashboardView';
@@ -253,6 +254,13 @@ function AnalyzeForm({
   const [location, setLocation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [placeDetails, setPlaceDetails] = useState<{
+    place_id: string;
+    url: string;
+    formatted_address: string;
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   useEffect(() => {
     const email = getSession();
@@ -272,7 +280,17 @@ function AnalyzeForm({
     setIsLoading(true);
     setError(null);
     try {
-      const res = await analyzeRestaurant(name.trim(), location.trim());
+      const res = await analyzeRestaurant(
+        name.trim(),
+        location.trim(),
+        placeDetails ? {
+          google_place_id: placeDetails.place_id,
+          google_place_url: placeDetails.url,
+          address: placeDetails.formatted_address,
+          latitude: placeDetails.latitude,
+          longitude: placeDetails.longitude,
+        } : undefined
+      );
       const uiData = mapToUi(res, name.trim(), location.trim());
       const email = getSession();
       if (email) saveRestaurant(email, name.trim(), location.trim());
@@ -325,18 +343,43 @@ function AnalyzeForm({
             )}
 
             <div className="space-y-4">
-              <Input
+              <RestaurantAutocomplete
                 label="Restaurant Name"
-                placeholder="e.g. The Meridian Kitchen"
+                placeholder="e.g. Boost Juice"
                 value={name}
                 onChange={setName}
+                contextQuery={location}
+                dropdownDirection="up"
+                onPlaceSelect={(details) => {
+                  setName(details.name);
+                  setLocation(details.formatted_address);
+                  setPlaceDetails({
+                    place_id: details.place_id,
+                    url: details.url,
+                    formatted_address: details.formatted_address,
+                    latitude: details.latitude,
+                    longitude: details.longitude,
+                  });
+                }}
                 isDisabled={isLoading}
               />
-              <Input
-                label="Location"
-                placeholder="e.g. Clayton, VIC"
+              <RestaurantAutocomplete
+                label="Location / Address"
+                placeholder="e.g. Monash Clayton"
                 value={location}
                 onChange={setLocation}
+                contextQuery={name}
+                onPlaceSelect={(details) => {
+                  setName(details.name);
+                  setLocation(details.formatted_address);
+                  setPlaceDetails({
+                    place_id: details.place_id,
+                    url: details.url,
+                    formatted_address: details.formatted_address,
+                    latitude: details.latitude,
+                    longitude: details.longitude,
+                  });
+                }}
                 isDisabled={isLoading}
               />
               <div className="pt-2">

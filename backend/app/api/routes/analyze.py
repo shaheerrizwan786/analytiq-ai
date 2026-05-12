@@ -56,8 +56,10 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
         restaurant_location=body.location,
     )
     if not resolved_tripadvisor_url:
+        # Use address for better search accuracy if available
+        search_name = f"{body.name} {body.address}" if body.address else body.name
         try:
-            t_search_url = resolve_tripadvisor_url_from_search(body.name.strip(), body.location.strip())
+            t_search_url = resolve_tripadvisor_url_from_search(search_name.strip(), body.location.strip())
         except SearchUrlResolverError as e:
             source_errors.append(f"tripadvisor-search: {str(e)}")
             t_search_url = None
@@ -102,8 +104,10 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
             restaurant_location=body.location,
         )
         if not resolved_yelp_url:
+            # Use address for better search accuracy if available
+            search_name = f"{body.name} {body.address}" if body.address else body.name
             try:
-                y_search_url = resolve_yelp_url_from_search(body.name.strip(), body.location.strip())
+                y_search_url = resolve_yelp_url_from_search(search_name.strip(), body.location.strip())
             except SearchUrlResolverError as e:
                 source_errors.append(f"yelp-search: {str(e)}")
                 y_search_url = None
@@ -152,11 +156,20 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
 
         # Google uses two-stage extraction
         if source == "google":
-            cached_google_url = sync_store.get_source_place_link(
-                source="google",
-                restaurant_name=body.name,
-                restaurant_location=body.location,
-            )
+            # Prioritize Google Places API data from request body
+            if body.google_place_url:
+                # Use URL directly from Places Autocomplete
+                cached_google_url = body.google_place_url
+            elif body.google_place_id:
+                # Construct URL from place_id
+                cached_google_url = f"https://www.google.com/maps/place/?q=place_id:{body.google_place_id}"
+            else:
+                # Fallback to cached URL from previous runs
+                cached_google_url = sync_store.get_source_place_link(
+                    source="google",
+                    restaurant_name=body.name,
+                    restaurant_location=body.location,
+                )
 
             try:
                 google_reviews, google_place_url, google_dataset_urls, google_stats = (
