@@ -77,7 +77,6 @@ def place_details(
         logger.error("Configuration error in place details", extra={"error": type(e).__name__})
         raise HTTPException(status_code=500, detail="Google API key not configured")
     except Exception as e:
-<<<<<<< HEAD
         logger.error("Place details request failed", extra={"error": type(e).__name__})
         raise HTTPException(status_code=500, detail="Failed to fetch place details")
 
