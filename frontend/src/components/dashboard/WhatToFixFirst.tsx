@@ -7,9 +7,10 @@ interface TopIssue {
 
 interface WhatToFixFirstProps {
   issue: TopIssue;
+  onAskAdvisor?: () => void;
 }
 
-export default function WhatToFixFirst({ issue }: WhatToFixFirstProps) {
+export default function WhatToFixFirst({ issue, onAskAdvisor }: WhatToFixFirstProps) {
   const noIssues = issue.title === 'No priority issues identified';
 
   if (noIssues) {
@@ -50,8 +51,12 @@ export default function WhatToFixFirst({ issue }: WhatToFixFirstProps) {
         </div>
 
         <div className="mt-5 pt-5 border-t border-emerald-100 dark:border-emerald-900/30">
-          <button className="text-sm font-medium text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-lg px-4 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors">
-            Explore Growth Plan
+          <button
+            onClick={onAskAdvisor}
+            className="text-sm font-medium text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-lg px-4 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors disabled:opacity-40"
+            disabled={!onAskAdvisor}
+          >
+            Ask AI Advisor →
           </button>
         </div>
       </div>
@@ -88,8 +93,12 @@ export default function WhatToFixFirst({ issue }: WhatToFixFirstProps) {
       </div>
 
       <div className="mt-5 pt-5 border-t border-orange-100 dark:border-orange-900/30">
-        <button className="text-sm font-medium text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 rounded-lg px-4 py-2 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors">
-          Get Detailed Plan
+        <button
+          onClick={onAskAdvisor}
+          className="text-sm font-medium text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 rounded-lg px-4 py-2 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors disabled:opacity-40"
+          disabled={!onAskAdvisor}
+        >
+          Ask AI Advisor →
         </button>
       </div>
     </div>

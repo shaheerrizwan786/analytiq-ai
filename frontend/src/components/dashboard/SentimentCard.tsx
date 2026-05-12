@@ -11,9 +11,9 @@ const barColors = {
 };
 
 const textColors = {
-  green: 'text-green-600',
-  yellow: 'text-yellow-500',
-  red: 'text-red-500',
+  green: 'text-green-600 dark:text-green-400',
+  yellow: 'text-yellow-500 dark:text-yellow-400',
+  red: 'text-red-500 dark:text-red-400',
 };
 
 export default function SentimentCard({ label, percentage, color }: SentimentCardProps) {

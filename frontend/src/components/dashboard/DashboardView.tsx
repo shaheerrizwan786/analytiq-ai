@@ -170,7 +170,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                   </div>
                 ) : (
                   <>
-                <WhatToFixFirst issue={data.topIssue} />
+                <WhatToFixFirst issue={data.topIssue} onAskAdvisor={() => setChatOpen(true)} />
                 <SentimentOverview sentiment={data.sentiment} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <StrengthsList strengths={data.strengths} />
