@@ -104,7 +104,7 @@ export default function PerformanceScoreCard({ reviews }: PerformanceScoreCardPr
           Performance
         </p>
         <p className="text-sm text-gray-400 dark:text-gray-500">
-          No reviews yet â€” run an analysis to see your performance score.
+          No reviews found — we couldn&apos;t locate this restaurant on Google or TripAdvisor. Please check the name and location.
         </p>
       </div>
     );

@@ -19,41 +19,76 @@ function mapToUi(api: AnalyzeResponse, name: string, location: string): Dashboar
   const sources = insights.sources ?? { google: 0, yelp: 0, tripadvisor: 0 };
   const totalReviews = sources.google + sources.yelp + sources.tripadvisor || api.new_reviews_count || 0;
 
-  const issues = (insights.top_issues ?? [])
-    .filter(Boolean)
-    .map((text, i) => ({
+  // Parse pipe-separated issue strings: "TITLE | COUNT | WHY"
+  const parseIssue = (raw: string) => {
+    const p = raw.split(' | ');
+    const count = parseInt(p[1] ?? '0', 10) || 0;
+    return { title: p[0]?.trim() ?? raw, count, why: p[2]?.trim() ?? '' };
+  };
+  // Parse pipe-separated rec strings: "ACTION | COST | IMPACT | WHY | TAGS_CSV"
+  const parseRec = (raw: string) => {
+    const p = raw.split(' | ');
+    return {
+      action: p[0]?.trim() ?? raw,
+      cost: (p[1]?.trim() ?? 'medium').toLowerCase(),
+      impact: p[2]?.trim() ?? '',
+      why: p[3]?.trim() ?? '',
+      tags: p[4] ? p[4].split(',').map((t) => t.trim()).filter(Boolean) : ([] as string[]),
+    };
+  };
+  // Parse pipe-separated strength strings: "TITLE | COUNT | WHY"
+  const parseStrength = (raw: string) => {
+    const p = raw.split(' | ');
+    return { title: p[0]?.trim() ?? raw, count: parseInt(p[1] ?? '0', 10) || 0, why: p[2]?.trim() ?? '' };
+  };
+
+  const rawIssues = (insights.top_issues ?? []).filter(Boolean);
+  const rawRecs = (insights.recommendations ?? []).filter(Boolean);
+  const rawStrengths = (insights.strengths ?? []).filter(Boolean);
+
+  const issues = rawIssues.map((raw, i) => {
+    const { title, count } = parseIssue(raw);
+    const impactLevel: 'high' | 'medium' | 'low' = count >= 10 ? 'high' : count >= 4 ? 'medium' : 'low';
+    return {
       id: String(i + 1),
-      text,
+      text: title,
       category: 'General',
-      impactLabel: 'Medium impact',
-      impactLevel: 'medium' as const,
-    }));
+      impactLabel: impactLevel === 'high' ? 'High impact' : impactLevel === 'medium' ? 'Medium impact' : 'Low impact',
+      impactLevel,
+    };
+  });
 
-  const recommendations = (insights.recommendations ?? [])
-    .filter(Boolean)
-    .map((action, i) => ({
-      id: String(i + 1),
-      action,
-      why: '',
-      impact: '',
-      tags: [] as string[],
-    }));
+  const recommendations = rawRecs.map((raw, i) => {
+    const { action, cost, impact, why, tags } = parseRec(raw);
+    const impactLevel: 'high' | 'medium' | 'low' = cost === 'high' ? 'high' : cost === 'low' ? 'low' : 'medium';
+    return { id: String(i + 1), action, why, impact, tags, impactLevel };
+  });
 
-  const topIssue = issues[0]
+  const strengths = rawStrengths.map((raw, i) => {
+    const { title } = parseStrength(raw);
+    return { id: `s${i + 1}`, text: title, category: 'General', impactLabel: 'Core strength' };
+  });
+
+  const firstIssue = rawIssues[0] ? parseIssue(rawIssues[0]) : null;
+  const firstRec = rawRecs[0] ? parseRec(rawRecs[0]) : null;
+
+  const topIssue = firstIssue
     ? {
-        title: issues[0].text,
-        reviewCount: 0,
-        recommendedAction: recommendations[0]?.action ?? 'No action available yet.',
-        expectedImpacts: [],
+        title: firstIssue.title,
+        reviewCount: firstIssue.count,
+        recommendedAction: firstRec?.action ?? 'No action available yet.',
+        expectedImpacts: firstRec?.impact ? [firstRec.impact] : [],
       }
     : {
-        title: 'No priority issues identified yet',
+        title: 'No priority issues identified',
         reviewCount: 0,
-        recommendedAction: 'Run the analysis again once more reviews are collected.',
-        expectedImpacts: [],
+        recommendedAction: firstRec?.action ?? 'Review your strengths and explore growth opportunities with the AI Advisor.',
+        expectedImpacts: firstRec?.impact ? [firstRec.impact] : [],
       };
 
-  const pct = Math.min(90, totalReviews > 0 ? Math.round((totalReviews / 50) * 100) : 0);
+  // Floor at 40% for any successful LLM analysis (even with few reviews), scale up to 90%
+  const basePct = totalReviews > 0 ? Math.min(90, 40 + Math.round((totalReviews / 50) * 50)) : 0;
+  const pct = basePct;
   const level: 'High' | 'Medium' | 'Low' = pct >= 60 ? 'High' : pct >= 30 ? 'Medium' : 'Low';
 
   const reviews = (api.reviews ?? []).map((r) => ({
@@ -72,7 +107,7 @@ function mapToUi(api: AnalyzeResponse, name: string, location: string): Dashboar
     location: api.restaurant_location ?? location,
     totalReviews,
     sentiment,
-    strengths: [],
+    strengths,
     topIssue,
     issues,
     recommendations,
@@ -80,7 +115,7 @@ function mapToUi(api: AnalyzeResponse, name: string, location: string): Dashboar
     confidence: {
       level,
       percentage: pct,
-      note: `Based on ${totalReviews} reviews across Google, TripAdvisor, and Yelp.`,
+      note: `Based on ${totalReviews} reviews across Google and TripAdvisor.`,
     },
   };
 }
@@ -188,7 +223,7 @@ function LandingPage({
 
           {/* Subtext */}
           <p className="mt-6 text-base sm:text-lg text-gray-400 max-w-xl mx-auto leading-relaxed">
-            Analytiq aggregates reviews from Google, TripAdvisor, and Yelp &mdash; then surfaces
+            Analytiq aggregates reviews from Google and TripAdvisor &mdash; then surfaces
             exactly what to fix and what to celebrate.
           </p>
 
@@ -246,9 +281,11 @@ function LandingPage({
 function AnalyzeForm({
   onBack,
   onDone,
+  onDemo,
 }: {
   onBack: () => void;
   onDone: (data: DashboardData) => void;
+  onDemo?: () => void;
 }) {
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
@@ -322,7 +359,7 @@ function AnalyzeForm({
           <div className="flex justify-center mb-6">
             <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-[#13131F]/80 backdrop-blur-sm border border-gray-100 dark:border-[#1E1E2E] rounded-full px-3 py-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Analysing reviews from Google &middot; TripAdvisor &middot; Yelp
+              Analysing reviews from Google &middot; TripAdvisor
             </div>
           </div>
 
@@ -386,6 +423,15 @@ function AnalyzeForm({
                 <Button onClick={handleSubmit} isDisabled={!canSubmit} isLoading={isLoading} size="lg" fullWidth>
                   Connect &amp; Analyse
                 </Button>
+                {onDemo && (
+                  <button
+                    type="button"
+                    onClick={onDemo}
+                    className="mt-3 w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-violet-500 dark:hover:text-violet-400 transition-colors"
+                  >
+                    Or try with demo data →
+                  </button>
+                )}
               </div>
             </div>
           </Card>
@@ -429,7 +475,7 @@ export default function Home() {
   function handleBack() {
     setMode('live');
     setDashboardData(null);
-    setView('landing');
+    setView('analyze');
   }
 
   if (view === 'dashboard' && dashboardData) {
@@ -437,7 +483,7 @@ export default function Home() {
   }
 
   if (view === 'analyze') {
-    return <AnalyzeForm onBack={() => setView('landing')} onDone={handleAnalysisDone} />;
+    return <AnalyzeForm onBack={() => setView('landing')} onDone={handleAnalysisDone} onDemo={handleViewDemo} />;
   }
 
   return (

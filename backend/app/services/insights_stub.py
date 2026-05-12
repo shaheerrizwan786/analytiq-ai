@@ -48,9 +48,8 @@ def stub_insights_from_reviews(reviews: list[ReviewLike], include_empty: bool = 
     return InsightsPayload(
         sentiment=sentiment_from_star_ratings(reviews, include_empty=include_empty),
         top_issues=[],
-        recommendations=[
-            "LLM step not connected yet — issues and actions will appear here.",
-        ],
+        recommendations=[],
+        strengths=[],
         sources=SourceCounts(
             google=counts.get("google", 0),
             yelp=counts.get("yelp", 0),

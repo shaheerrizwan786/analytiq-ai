@@ -10,6 +10,7 @@ from app.services.apify_google_reviews import (
     fetch_google_reviews_detailed,
 )
 from app.services.insights_stub import stub_insights_from_reviews
+from app.services.llm_service import generate_insights
 from app.services.review_sync_store import create_default_sync_store, reset_all
 from app.services.search_url_resolver import (
     SearchUrlResolverError,
@@ -40,6 +41,43 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
         )
 
     sync_store = create_default_sync_store()
+
+    # Fast path: if we already have cached reviews, skip Apify entirely
+    _cached_check = sync_store.get_all_reviews(
+        restaurant_name=body.name.strip(),
+        restaurant_location=body.location.strip(),
+    )
+    if _cached_check:
+        stub = stub_insights_from_reviews(_cached_check)
+        if settings.openai_api_key:
+            _llm = generate_insights(reviews=_cached_check, api_key=settings.openai_api_key,
+                        sentiment=stub.sentiment, sources=stub.sources)
+            insights = _llm if _llm is not None else stub
+        else:
+            insights = stub
+        review_items_cached = [
+            ReviewItem(
+                id=r.review_key,
+                source=r.source,
+                text=r.text,
+                rating=r.rating,
+                date_iso=r.date_iso,
+            )
+            for r in _cached_check
+            if r.text
+        ]
+        return AnalyzeResponse(
+            job_id=str(uuid.uuid4()),
+            status="completed",
+            restaurant_name=body.name.strip(),
+            restaurant_location=body.location.strip(),
+            insights=insights,
+            reviews=review_items_cached,
+            detail=f"Served from cache: {len(_cached_check)} reviews for '{body.name.strip()}'.",
+            extracted_range_from=None,
+            extracted_range_to=None,
+            new_reviews_count=0,
+        )
 
     all_new_reviews = []
     dataset_urls: list[str] = []
@@ -287,7 +325,21 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
         restaurant_name=body.name.strip(),
         restaurant_location=body.location.strip(),
     )
-    insights = stub_insights_from_reviews(all_stored_reviews, include_empty=settings.include_empty_reviews)
+
+    # Compute sentiment + source counts from all stored reviews (stub is fast/free)
+    stub = stub_insights_from_reviews(all_stored_reviews)
+
+    # Try LLM insights; fall back to stub if key missing or call fails
+    if settings.openai_api_key and all_stored_reviews:
+        llm_result = generate_insights(
+            reviews=all_stored_reviews,
+            api_key=settings.openai_api_key,
+            sentiment=stub.sentiment,
+            sources=stub.sources,
+        )
+        insights = llm_result if llm_result is not None else stub
+    else:
+        insights = stub
 
     # Filter reviews based on include_empty_reviews setting
     if settings.include_empty_reviews:
