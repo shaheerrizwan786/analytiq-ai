@@ -11,12 +11,66 @@
   --cta: #F97316;
   --card-dark: #13131F;
   --card-border-dark: #1E1E2E;
+
+  /* Visual theme vars — Midnight (default) */
+  --vt-from: #7C3AED;
+  --vt-mid:  #C026D3;
+  --vt-to:   #22D3EE;
+  --vt-cta:  #F97316;
+  --vt-spark: #F97316;
+  --vt-bg:   #0C0C18;
+  --vt-orb1: rgba(109, 40, 217, 0.20);
+  --vt-orb2: rgba(34, 211, 238, 0.15);
+  --vt-orb3: rgba(249, 115, 22, 0.10);
+}
+
+/* Visual theme — Bistro (warm amber/rose, espresso vibes) */
+[data-vt="bistro"] {
+  --vt-from:  #D97706;
+  --vt-mid:   #E11D48;
+  --vt-to:    #F43F5E;
+  --vt-cta:   #DC2626;
+  --vt-spark: #FCD34D;
+  --vt-bg:    #18090A;
+  --vt-orb1:  rgba(217, 119, 6, 0.22);
+  --vt-orb2:  rgba(244, 63, 94, 0.15);
+  --vt-orb3:  rgba(220, 38, 38, 0.10);
+}
+
+/* Visual theme — Fresh (emerald/sky, modern healthy) */
+[data-vt="fresh"] {
+  --vt-from:  #10B981;
+  --vt-mid:   #06B6D4;
+  --vt-to:    #0EA5E9;
+  --vt-cta:   #16A34A;
+  --vt-spark: #34D399;
+  --vt-bg:    #071410;
+  --vt-orb1:  rgba(16, 185, 129, 0.20);
+  --vt-orb2:  rgba(14, 165, 233, 0.15);
+  --vt-orb3:  rgba(132, 204, 22, 0.10);
 }
 
 .dark {
   --background: #0C0C18;
   --foreground: #f1f5f9;
 }
+
+/* Utility: gradient text using visual theme colours */
+.vt-gradient-text {
+  background-image: linear-gradient(to right, var(--vt-from), var(--vt-mid), var(--vt-to));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Utility: CTA button base colours */
+.btn-vt-cta {
+  background-color: var(--vt-cta);
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--vt-cta) 30%, transparent);
+}
+.btn-vt-cta:hover  { filter: brightness(1.1); }
+.btn-vt-cta:active { filter: brightness(0.9); }
 
 @theme inline {
   --color-background: var(--background);

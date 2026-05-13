@@ -13,6 +13,7 @@ import { analyzeRestaurantStream, AnalyzeResponse, ProgressUpdate } from '@/lib/
 import { getSession, getSavedRestaurant, saveRestaurant } from '@/lib/auth';
 import { useAppMode } from '@/lib/modeContext';
 import { demoDashboardData } from '@/lib/demoData';
+import { getVisualTheme, setVisualTheme, VISUAL_THEMES, type VisualTheme } from '@/lib/visualTheme';
 
 function mapToUi(api: AnalyzeResponse, name: string, location: string): DashboardData {
   const insights = api.insights ?? {};
@@ -136,8 +137,8 @@ function LogoMark({ size = 36 }: { size?: number }) {
     >
       <defs>
         <linearGradient id="landing-logo-grad" x1="0" y1="0" x2="28" y2="0" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#6C35E0" />
-          <stop offset="100%" stopColor="#22D3EE" />
+          <stop offset="0%" style={{ stopColor: 'var(--vt-from)' }} />
+          <stop offset="100%" style={{ stopColor: 'var(--vt-to)' }} />
         </linearGradient>
       </defs>
       <rect x="2" y="18" width="4.5" height="7" rx="1.5" fill="url(#landing-logo-grad)" />
@@ -163,11 +164,18 @@ function LandingPage({
 }) {
   const [showAuth, setShowAuth] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [vt, setVT] = useState<VisualTheme>('midnight');
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 60);
+    setVT(getVisualTheme());
     return () => clearTimeout(t);
   }, []);
+
+  function handleSetTheme(next: VisualTheme) {
+    setVisualTheme(next);
+    setVT(next);
+  }
 
   function handleAuthSuccess(email: string) {
     setShowAuth(false);
@@ -175,12 +183,12 @@ function LandingPage({
   }
 
   return (
-    <div className="relative min-h-screen bg-[#0C0C18] overflow-hidden flex flex-col">
+    <div className="relative min-h-screen overflow-hidden flex flex-col" style={{ background: 'var(--vt-bg)' }}>
       {/* Animated background orbs */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="animate-float-blob absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full bg-violet-600/20 blur-3xl" />
-        <div className="animate-float-blob-delay absolute -bottom-48 -right-48 w-[500px] h-[500px] rounded-full bg-cyan-500/15 blur-3xl" />
-        <div className="animate-float-blob absolute top-1/3 right-1/4 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl" />
+        <div className="animate-float-blob absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full blur-3xl" style={{ backgroundColor: 'var(--vt-orb1)' }} />
+        <div className="animate-float-blob-delay absolute -bottom-48 -right-48 w-[500px] h-[500px] rounded-full blur-3xl" style={{ backgroundColor: 'var(--vt-orb2)' }} />
+        <div className="animate-float-blob absolute top-1/3 right-1/4 w-72 h-72 rounded-full blur-3xl" style={{ backgroundColor: 'var(--vt-orb3)' }} />
       </div>
 
       {/* Top bar */}
@@ -188,16 +196,33 @@ function LandingPage({
         <div className="flex items-center gap-2.5">
           <LogoMark size={32} />
           <span className="text-base font-semibold tracking-tight">
-            <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">Analytiq</span>
+            <span className="vt-gradient-text">Analytiq</span>
             <span className="text-gray-200"> AI</span>
           </span>
         </div>
-        <button
-          onClick={() => setShowAuth(true)}
-          className="text-sm font-medium text-gray-400 hover:text-gray-100 transition-colors"
-        >
-          Sign in
-        </button>
+        <div className="flex items-center gap-4">
+          {/* Visual theme picker */}
+          <div className="flex items-center gap-1.5" role="group" aria-label="Visual theme">
+            {VISUAL_THEMES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => handleSetTheme(t.id)}
+                title={`${t.label} theme — ${t.desc}`}
+                aria-pressed={vt === t.id}
+                className={`w-4 h-4 rounded-full transition-all duration-150 hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+                  vt === t.id ? 'ring-2 ring-offset-1 ring-offset-transparent ring-white/50 scale-110' : ''
+                }`}
+                style={{ backgroundColor: t.dot }}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => setShowAuth(true)}
+            className="text-sm font-medium text-gray-400 hover:text-gray-100 transition-colors"
+          >
+            Sign in
+          </button>
+        </div>
       </header>
 
       {/* Hero */}
@@ -217,7 +242,7 @@ function LandingPage({
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.15]">
             Turn customer reviews into
             <br />
-            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">
+            <span className="vt-gradient-text">
               your competitive edge
             </span>
           </h1>
@@ -232,7 +257,7 @@ function LandingPage({
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={onDemo}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03] shadow-lg shadow-orange-500/25"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl btn-vt-cta text-white font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03]"
             >
               View live demo
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -256,12 +281,36 @@ function LandingPage({
       <div className="relative z-10 border-t border-white/5 bg-white/[0.02] backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-6 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
           {[
-            { icon: '📊', label: 'Sentiment trends', desc: 'Track how guest mood shifts over time' },
-            { icon: '✅', label: 'Strengths spotlight', desc: 'See exactly what keeps guests coming back' },
-            { icon: '🎯', label: 'Prioritised fixes', desc: 'Know which issues drive the most impact' },
+            {
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: 'var(--vt-from)' }}>
+                  <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+              ),
+              label: 'Sentiment trends',
+              desc: 'Track how guest mood shifts over time',
+            },
+            {
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: 'var(--vt-mid)' }}>
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+              ),
+              label: 'Strengths spotlight',
+              desc: 'See exactly what keeps guests coming back',
+            },
+            {
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: 'var(--vt-to)' }}>
+                  <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+                </svg>
+              ),
+              label: 'Prioritised fixes',
+              desc: 'Know which issues drive the most impact',
+            },
           ].map(({ icon, label, desc }) => (
-            <div key={label} className="space-y-1">
-              <div className="text-xl">{icon}</div>
+            <div key={label} className="space-y-2">
+              <div className="flex justify-center">{icon}</div>
               <p className="text-sm font-medium text-gray-300">{label}</p>
               <p className="text-xs text-gray-600">{desc}</p>
             </div>
@@ -454,7 +503,7 @@ function AnalyzeForm({
 
           <Card padding="lg" className="shadow-xl dark:shadow-violet-950/20">
             <div className="mb-8">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-cyan-500 bg-clip-text text-transparent leading-tight">
+              <h1 className="text-2xl font-bold vt-gradient-text leading-tight">
                 Know what to fix.<br />Before guests leave.
               </h1>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">

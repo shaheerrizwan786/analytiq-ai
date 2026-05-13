@@ -3,19 +3,27 @@
 import { useState, useEffect } from 'react';
 import { getSession, clearSession } from '@/lib/auth';
 import { toggleTheme, getTheme, type Theme } from '@/lib/theme';
+import { getVisualTheme, setVisualTheme, VISUAL_THEMES, type VisualTheme } from '@/lib/visualTheme';
 import AuthModal from '@/components/auth/AuthModal';
 import { useAppMode } from '@/lib/modeContext';
 
 export default function Navbar() {
   const [session, setSession] = useState<string | null>(null);
   const [theme, setThemeState] = useState<Theme>('light');
+  const [vt, setVT] = useState<VisualTheme>('midnight');
   const [showModal, setShowModal] = useState(false);
   const { mode, restaurantName } = useAppMode();
 
   useEffect(() => {
     setSession(getSession());
     setThemeState(getTheme());
+    setVT(getVisualTheme());
   }, []);
+
+  function handleSetVT(next: VisualTheme) {
+    setVisualTheme(next);
+    setVT(next);
+  }
 
   function handleSignOut() {
     clearSession();
@@ -43,8 +51,8 @@ export default function Navbar() {
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <defs>
                 <linearGradient id="logo-grad" x1="0" y1="0" x2="28" y2="0" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#6C35E0"/>
-                  <stop offset="100%" stopColor="#22D3EE"/>
+                  <stop offset="0%" style={{ stopColor: 'var(--vt-from)' }}/>
+                  <stop offset="100%" style={{ stopColor: 'var(--vt-to)' }}/>
                 </linearGradient>
               </defs>
               {/* 4 ascending bars */}
@@ -56,7 +64,7 @@ export default function Navbar() {
               <circle cx="22.25" cy="1.5" r="1.5" fill="#F97316"/>
             </svg>
             <span className="text-sm font-semibold tracking-tight">
-              <span className="bg-gradient-to-r from-violet-600 to-cyan-500 bg-clip-text text-transparent">Analytiq</span>
+              <span className="vt-gradient-text">Analytiq</span>
               <span className="text-gray-900 dark:text-gray-100"> AI</span>
             </span>
             {restaurantName && (
@@ -72,6 +80,22 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Visual theme picker */}
+            <div className="flex items-center gap-1" role="group" aria-label="Visual theme">
+              {VISUAL_THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => handleSetVT(t.id)}
+                  title={`${t.label} theme`}
+                  aria-pressed={vt === t.id}
+                  className={`w-3.5 h-3.5 rounded-full transition-all duration-150 hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-white/40 ${
+                    vt === t.id ? 'ring-2 ring-offset-1 ring-white/40 scale-110' : 'opacity-60'
+                  }`}
+                  style={{ backgroundColor: t.dot }}
+                />
+              ))}
+            </div>
+
             {/* Dark mode toggle */}
             <button
               onClick={handleThemeToggle}
@@ -108,7 +132,7 @@ export default function Navbar() {
             ) : (
               <button
                 onClick={() => setShowModal(true)}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+                className="text-xs font-medium px-3 py-1.5 rounded-lg btn-vt-cta text-white transition-all duration-150"
               >
                 Sign in
               </button>
