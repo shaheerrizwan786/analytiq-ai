@@ -33,7 +33,10 @@ export function setVariant(variant: Variant): void {
   if (variant === 'cool') {
     document.documentElement.setAttribute('data-vt', 'cool');
   } else {
+    // Warm theme is always light — force light mode
     document.documentElement.removeAttribute('data-vt');
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem(THEME_KEY, 'light');
   }
 }
 

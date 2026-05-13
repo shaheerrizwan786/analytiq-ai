@@ -33,6 +33,8 @@ export default function Navbar() {
   function handleVariantToggle(v: Variant) {
     setVariant(v);
     setVariantState(v);
+    // Warm theme is light-only — reflect that in state
+    if (v === 'warm') setThemeState('light');
   }
 
   function handleAuthSuccess(email: string) {
@@ -90,7 +92,8 @@ export default function Navbar() {
               />
             </div>
 
-            {/* Dark mode toggle */}
+            {/* Dark mode toggle — only shown for cool palette */}
+            {variant === 'cool' && (
             <button
               onClick={handleThemeToggle}
               aria-label="Toggle dark mode"
@@ -107,6 +110,7 @@ export default function Navbar() {
                 </svg>
               )}
             </button>
+            )}
 
             {/* Auth */}
             {session ? (

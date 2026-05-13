@@ -26,11 +26,11 @@
   --vt-to:     #D4923A;
   --vt-cta:    #9B2335;
   --vt-spark:  #E8B56A;
-  --vt-bg:     #FBF4EC;
-  --vt-bg-end: rgba(255, 237, 213, 0.2);
-  --vt-orb1:   rgba(155, 35, 53, 0.14);
-  --vt-orb2:   rgba(212, 146, 58, 0.10);
-  --vt-orb3:   rgba(184, 92, 42, 0.07);
+  --vt-bg:     #FAF0E6;   /* linen — richer warm parchment */
+  --vt-bg-end: rgba(212, 146, 58, 0.15);
+  --vt-orb1:   rgba(155, 35, 53, 0.30);
+  --vt-orb2:   rgba(212, 146, 58, 0.22);
+  --vt-orb3:   rgba(184, 92, 42, 0.15);
 }
 
 .dark {
