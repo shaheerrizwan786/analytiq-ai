@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 
@@ -121,7 +121,7 @@ export default function RecentReviewsList({ reviews, onViewAll }: RecentReviewsL
     : `${filtered.length} review${filtered.length !== 1 ? 's' : ''} this month`;
 
   return (
-    <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm p-5">
+    <div className="bg-white dark:bg-[var(--dk-card)] rounded-2xl border border-gray-100 dark:border-[var(--dk-border)] shadow-sm p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div>
@@ -133,7 +133,7 @@ export default function RecentReviewsList({ reviews, onViewAll }: RecentReviewsL
         {onViewAll && (
           <button
             onClick={onViewAll}
-            className="text-xs font-medium text-violet-500 hover:text-violet-400 transition-colors"
+            className="text-xs font-medium text-[#9B2335] hover:text-[#C0602A] transition-colors"
           >
             View all →
           </button>
@@ -148,7 +148,7 @@ export default function RecentReviewsList({ reviews, onViewAll }: RecentReviewsL
             onClick={() => setTimeRange(tr)}
             className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
               timeRange === tr
-                ? 'bg-white dark:bg-[#13131F] text-gray-800 dark:text-gray-100 shadow-sm'
+                ? 'bg-white dark:bg-[var(--dk-card)] text-gray-800 dark:text-gray-100 shadow-sm'
                 : 'text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >

@@ -151,7 +151,7 @@ export default function RestaurantAutocomplete({
           }}
           disabled={isDisabled}
           placeholder={placeholder}
-          className="w-full px-4 py-2.5 text-sm bg-white dark:bg-[#1E1E2E] border border-gray-200 dark:border-[#2A2A3C] rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 dark:focus:ring-violet-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+          className="w-full px-4 py-2.5 text-sm bg-white dark:bg-[var(--dk-alt)] border border-gray-200 dark:border-[var(--dk-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9B2335] dark:focus:ring-[var(--dk-accent)] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
         />
         {isLoading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -181,7 +181,7 @@ export default function RestaurantAutocomplete({
 
       {/* Dropdown */}
       {showDropdown && suggestions.length > 0 && (
-        <div className={`absolute z-50 w-full ${dropdownDirection === 'up' ? 'bottom-full mb-1' : 'mt-1'} bg-white dark:bg-[#1E1E2E] border border-gray-200 dark:border-[#2A2A3C] rounded-lg shadow-lg max-h-60 overflow-y-auto`}>
+        <div className={`absolute z-50 w-full ${dropdownDirection === 'up' ? 'bottom-full mb-1' : 'mt-1'} bg-white dark:bg-[var(--dk-alt)] border border-gray-200 dark:border-[var(--dk-border)] rounded-lg shadow-lg max-h-60 overflow-y-auto`}>
           {suggestions.map((suggestion, index) => {
             const mainText = suggestion.structured_formatting?.main_text || suggestion.description.split(',')[0];
             const secondaryText = suggestion.structured_formatting?.secondary_text || suggestion.description.split(',').slice(1).join(',').trim();
@@ -190,8 +190,8 @@ export default function RestaurantAutocomplete({
               <button
                 key={suggestion.place_id}
                 onClick={() => handleSelectPlace(suggestion.place_id, suggestion.description)}
-                className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-[#2A2A3C] transition-colors border-b border-gray-100 dark:border-[#2A2A3C] last:border-b-0 ${
-                  index === selectedIndex ? 'bg-gray-50 dark:bg-[#2A2A3C]' : ''
+                className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-[var(--dk-tint)] transition-colors border-b border-gray-100 dark:border-[var(--dk-border)] last:border-b-0 ${
+                  index === selectedIndex ? 'bg-gray-50 dark:bg-[var(--dk-tint)]' : ''
                 }`}
               >
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100">

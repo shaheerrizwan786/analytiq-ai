@@ -1,4 +1,4 @@
-interface SentimentCardProps {
+﻿interface SentimentCardProps {
   label: string;
   percentage: number;
   color: 'green' | 'yellow' | 'red';
@@ -18,7 +18,7 @@ const textColors = {
 
 export default function SentimentCard({ label, percentage, color }: SentimentCardProps) {
   return (
-    <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm p-5">
+    <div className="bg-white dark:bg-[var(--dk-card)] rounded-2xl border border-gray-100 dark:border-[var(--dk-border)] shadow-sm p-5">
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
         <p className={`text-2xl font-semibold ${textColors[color]}`}>{percentage}%</p>

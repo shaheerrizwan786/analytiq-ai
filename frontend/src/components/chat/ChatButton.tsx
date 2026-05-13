@@ -10,7 +10,7 @@ export default function ChatButton({ onClick, unread = 0 }: ChatButtonProps) {
     <button
       onClick={onClick}
       aria-label="Open AI Advisor"
-      className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-violet-600 hover:bg-violet-500 active:scale-95 shadow-[0_8px_32px_rgba(108,53,224,0.5)] flex items-center justify-center transition-all duration-200 group"
+      className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-[#9B2335] hover:bg-[#C0602A] active:scale-95 shadow-[0_8px_32px_rgba(155,35,53,0.5)] flex items-center justify-center transition-all duration-200 group"
     >
       {/* Chat icon */}
       <svg
@@ -31,7 +31,7 @@ export default function ChatButton({ onClick, unread = 0 }: ChatButtonProps) {
 
       {/* Unread badge */}
       {unread > 0 && (
-        <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cyan-400 text-[10px] font-bold text-slate-900 flex items-center justify-center">
+        <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#D4923A] text-[10px] font-bold text-white flex items-center justify-center">
           {unread > 9 ? '9+' : unread}
         </span>
       )}

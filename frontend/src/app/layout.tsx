@@ -36,7 +36,7 @@ export default function RootLayout({
         {/* Inline script: runs synchronously before first paint to avoid FOUC */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('ui:theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('ui:theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}var v=localStorage.getItem('ui:variant');if(v==='cool'){document.documentElement.setAttribute('data-vt','cool');}else{document.documentElement.removeAttribute('data-vt');}}catch(e){}})();`,
           }}
         />
       </head>

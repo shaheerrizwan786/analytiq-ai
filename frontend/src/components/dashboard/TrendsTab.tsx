@@ -52,7 +52,7 @@ interface CustomTooltipProps {
 function ChartTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-[#1A1A2E] border border-gray-100 dark:border-[#1E1E2E] rounded-xl shadow-lg px-3 py-2.5 text-xs space-y-1 min-w-[140px]">
+    <div className="bg-white dark:bg-[var(--dk-alt)] border border-gray-100 dark:border-[var(--dk-border)] rounded-xl shadow-lg px-3 py-2.5 text-xs space-y-1 min-w-[140px]">
       {label && (
         <p className="font-medium text-gray-700 dark:text-gray-200 mb-1.5">{label}</p>
       )}
@@ -79,7 +79,7 @@ function ChartSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm p-5">
+    <div className="bg-white dark:bg-[var(--dk-card)] rounded-2xl border border-gray-100 dark:border-[var(--dk-border)] shadow-sm p-5">
       <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{title}</p>
       {subtitle && (
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 mb-4 leading-snug">{subtitle}</p>
@@ -110,7 +110,7 @@ function InsightCallout({ weeks, totalReviews }: { weeks: WeeklyPoint[]; totalRe
   const worstWeek = [...weeks].sort((a, b) => b.negative - a.negative)[0];
 
   return (
-    <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm p-5">
+    <div className="bg-white dark:bg-[var(--dk-card)] rounded-2xl border border-gray-100 dark:border-[var(--dk-border)] shadow-sm p-5">
       <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">
         What the data says
       </p>
@@ -183,7 +183,7 @@ export default function TrendsTab({ reviews }: TrendsTabProps) {
               onClick={() => setPeriod(p)}
               className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors whitespace-nowrap ${
                 period === p
-                  ? 'bg-white dark:bg-[#13131F] text-gray-800 dark:text-gray-100 shadow-sm'
+                  ? 'bg-white dark:bg-[var(--dk-card)] text-gray-800 dark:text-gray-100 shadow-sm'
                   : 'text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >

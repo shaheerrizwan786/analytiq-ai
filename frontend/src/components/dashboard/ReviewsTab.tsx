@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 
@@ -129,7 +129,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
           { label: 'Concerns', value: `${stats.negative} (${stats.total ? Math.round(stats.negative / stats.total * 100) : 0}%)` },
           { label: 'Avg rating', value: stats.avgRating != null ? `★ ${stats.avgRating.toFixed(1)}` : '—' },
         ].map((s) => (
-          <div key={s.label} className="bg-white dark:bg-[#13131F] border border-gray-100 dark:border-[#1E1E2E] rounded-xl px-4 py-3">
+          <div key={s.label} className="bg-white dark:bg-[var(--dk-card)] border border-gray-100 dark:border-[var(--dk-border)] rounded-xl px-4 py-3">
             <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{s.label}</p>
             <p className="text-lg font-semibold text-gray-800 dark:text-gray-100">{s.value}</p>
           </div>
@@ -146,7 +146,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search review text…"
-          className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#13131F] text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400/40"
+          className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[var(--dk-card)] text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#C0602A]/40"
         />
         {query && (
           <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Clear search">
@@ -160,7 +160,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
         {/* Source pills */}
         <button
           onClick={() => setSourceFilter('all')}
-          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === 'all' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'}`}
+          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === 'all' ? 'bg-[#9B2335] text-white border-[#9B2335]' : 'bg-white dark:bg-[var(--dk-card)] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-[#C0602A]'}`}
         >
           All sources
         </button>
@@ -168,7 +168,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
           <button
             key={src}
             onClick={() => setSourceFilter(src)}
-            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === src ? 'bg-violet-600 text-white border-violet-600' : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === src ? 'bg-[#9B2335] text-white border-[#9B2335]' : 'bg-white dark:bg-[var(--dk-card)] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-[#C0602A]'}`}
           >
             {PLATFORM_LABELS[src]}{sourceCounts[src] > 0 ? ` (${sourceCounts[src]})` : ''}
           </button>
@@ -181,7 +181,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
           <button
             key={s}
             onClick={() => setSentimentFilter(s)}
-            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sentimentFilter === s ? 'bg-violet-600 text-white border-violet-600' : 'bg-white dark:bg-[#13131F] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-violet-400'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sentimentFilter === s ? 'bg-[#9B2335] text-white border-[#9B2335]' : 'bg-white dark:bg-[var(--dk-card)] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-[#C0602A]'}`}
           >
             {s === 'all' ? 'All' : SENTIMENT_LABELS[s]}
           </button>
@@ -191,7 +191,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as typeof sortOrder)}
-            className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-white dark:bg-[#13131F] text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-white dark:bg-[var(--dk-card)] text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-[#9B2335]"
           >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
@@ -209,7 +209,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
             : `${filtered.length} of ${reviews.length} review${reviews.length !== 1 ? 's' : ''}`}
         </p>
         {isFiltered && (
-          <button onClick={resetFilters} className="text-xs text-violet-500 hover:text-violet-400 underline">
+          <button onClick={resetFilters} className="text-xs text-[#9B2335] hover:text-[#C0602A] underline">
             Clear filters
           </button>
         )}
@@ -223,7 +223,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
       ) : (
         <div className="space-y-3">
           {filtered.map((review) => (
-            <div key={review.id} className="bg-white dark:bg-[#13131F] border border-gray-100 dark:border-[#1E1E2E] rounded-xl p-4 shadow-sm space-y-2.5">
+            <div key={review.id} className="bg-white dark:bg-[var(--dk-card)] border border-gray-100 dark:border-[var(--dk-border)] rounded-xl p-4 shadow-sm space-y-2.5">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PLATFORM_COLORS[review.platform]}`}>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 
@@ -17,9 +17,9 @@ interface AIRecommendationsListProps {
 const tagColors: Record<string, string> = {
   'High Impact': 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400',
   'Quick Win': 'bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400',
-  'Operational': 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400',
+  'Operational': 'bg-[#F9ECE8] dark:bg-[var(--dk-tint)] text-[#C0602A] dark:text-[var(--dk-accent3)]',
   'Revenue': 'bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400',
-  'Operations': 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400',
+  'Operations': 'bg-[#F9ECE8] dark:bg-[var(--dk-tint)] text-[#C0602A] dark:text-[var(--dk-accent3)]',
 };
 
 function RecommendationCard({ rec, index }: { rec: Recommendation; index: number }) {
@@ -34,7 +34,7 @@ function RecommendationCard({ rec, index }: { rec: Recommendation; index: number
         aria-expanded={open}
       >
         {/* Number bubble */}
-        <span className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400 text-[10px] font-bold flex items-center justify-center">
+        <span className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#F9ECE8] dark:bg-[var(--dk-tint)] text-[#9B2335] dark:text-[var(--dk-accent3)] text-[10px] font-bold flex items-center justify-center">
           {index + 1}
         </span>
 
@@ -88,7 +88,7 @@ function RecommendationCard({ rec, index }: { rec: Recommendation; index: number
 
 export default function AIRecommendationsList({ recommendations }: AIRecommendationsListProps) {
   return (
-    <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm p-5">
+    <div className="bg-white dark:bg-[var(--dk-card)] rounded-2xl border border-gray-100 dark:border-[var(--dk-border)] shadow-sm p-5">
       <div className="flex items-center justify-between mb-1">
         <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">AI recommendations</p>
         {recommendations.length > 0 && (

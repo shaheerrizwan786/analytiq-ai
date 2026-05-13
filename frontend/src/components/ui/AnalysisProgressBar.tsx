@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -168,8 +168,8 @@ export default function AnalysisProgressBar({
           <div className="flex items-center justify-center gap-2">
             {currentStage === 'insights' && (
               <>
-                <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-                <span className="text-sm text-violet-600 dark:text-violet-400 font-medium">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#9B2335] animate-pulse" />
+                <span className="text-sm text-[#9B2335] dark:text-[var(--dk-accent2)] font-medium">
                   Generating insights...
                 </span>
               </>

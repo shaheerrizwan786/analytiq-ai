@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
@@ -119,7 +119,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                   onClick={() => setActiveTab('overview')}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     activeTab === 'overview'
-                      ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
+                      ? 'border-b-2 border-[#9B2335] text-[#9B2335] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
@@ -129,7 +129,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                   onClick={() => setActiveTab('reviews')}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     activeTab === 'reviews'
-                      ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
+                      ? 'border-b-2 border-[#9B2335] text-[#9B2335] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
@@ -139,7 +139,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                   onClick={() => setActiveTab('trends')}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     activeTab === 'trends'
-                      ? 'border-b-2 border-violet-600 text-violet-700 dark:text-violet-400'
+                      ? 'border-b-2 border-[#9B2335] text-[#9B2335] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
@@ -152,8 +152,8 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                 onClick={() => setChatOpen((o) => !o)}
                 className={`hidden lg:flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                   chatOpen
-                    ? 'bg-violet-600 text-white shadow-md shadow-violet-500/30'
-                    : 'bg-gradient-to-r from-violet-600 to-cyan-500 text-white shadow-md shadow-violet-500/25 hover:shadow-lg hover:shadow-violet-500/35 hover:scale-105 active:scale-100'
+                    ? 'bg-[#9B2335] text-white shadow-md shadow-[#9B2335]/30'
+                    : 'bg-gradient-to-r from-[#9B2335] to-[#D4923A] text-white shadow-md shadow-[#9B2335]/25 hover:shadow-lg hover:shadow-[#9B2335]/35 hover:scale-105 active:scale-100'
                 }`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -200,7 +200,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
         <aside
           className={`hidden lg:flex flex-col shrink-0 border-l overflow-hidden transition-all duration-300 ease-in-out ${
             chatOpen
-              ? 'w-[380px] xl:w-[420px] border-gray-200 dark:border-[#1E1E2E] opacity-100'
+              ? 'w-[380px] xl:w-[420px] border-gray-200 dark:border-[var(--dk-border)] opacity-100'
               : 'w-0 border-transparent opacity-0'
           }`}
         >

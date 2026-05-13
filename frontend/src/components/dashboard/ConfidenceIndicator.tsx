@@ -1,4 +1,4 @@
-type ConfidenceLevel = 'High' | 'Medium' | 'Low';
+﻿type ConfidenceLevel = 'High' | 'Medium' | 'Low';
 
 interface ConfidenceData {
   level: ConfidenceLevel;
@@ -19,7 +19,7 @@ const levelColors: Record<ConfidenceLevel, { text: string; bar: string; badge: s
 export default function ConfidenceIndicator({ confidence }: ConfidenceIndicatorProps) {
   const c = levelColors[confidence.level];
   return (
-    <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm px-4 py-3.5">
+    <div className="bg-white dark:bg-[var(--dk-card)] rounded-2xl border border-gray-100 dark:border-[var(--dk-border)] shadow-sm px-4 py-3.5">
       <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2.5">Analysis confidence</p>
 
       {/* Badge + percentage on one row */}

@@ -17,10 +17,10 @@ const SCORE_STYLES = {
     bar: 'bg-gradient-to-r from-emerald-400 to-emerald-500',
   },
   Good: {
-    ring: 'ring-violet-400 dark:ring-violet-500',
-    text: 'text-violet-600 dark:text-violet-400',
-    badge: 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300',
-    bar: 'bg-gradient-to-r from-violet-400 to-cyan-400',
+    ring: 'ring-[#C0602A] dark:ring-[#D4923A]',
+    text: 'text-[#9B2335] dark:text-[var(--dk-accent3)]',
+    badge: 'bg-[#F9ECE8] dark:bg-[var(--dk-tint)] text-[#7A1C2A] dark:text-[var(--dk-accent3)]',
+    bar: 'bg-gradient-to-r from-[#C0602A] to-[#D4923A]',
   },
   'Needs Attention': {
     ring: 'ring-amber-400 dark:ring-amber-500',
@@ -49,7 +49,7 @@ const RATING_SEGMENTS = [
   { label: 'Poor',         min: 1.0, max: 2.5, bar: 'bg-rose-400',   text: 'text-rose-600 dark:text-rose-400',   badge: 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300' },
   { label: 'Below Avg',    min: 2.5, max: 3.5, bar: 'bg-orange-400', text: 'text-orange-600 dark:text-orange-400', badge: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300' },
   { label: 'Average',      min: 3.5, max: 4.0, bar: 'bg-amber-400',  text: 'text-amber-600 dark:text-amber-400',  badge: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300' },
-  { label: 'Good',         min: 4.0, max: 4.5, bar: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400', badge: 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300' },
+  { label: 'Good',         min: 4.0, max: 4.5, bar: 'bg-[#9B2335]', text: 'text-[#9B2335] dark:text-[var(--dk-accent3)]', badge: 'bg-[#F9ECE8] dark:bg-[var(--dk-tint)] text-[#7A1C2A] dark:text-[var(--dk-accent3)]' },
   { label: 'Excellent',    min: 4.5, max: 5.0, bar: 'bg-emerald-500',text: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' },
 ] as const;
 
@@ -99,7 +99,7 @@ export default function PerformanceScoreCard({ reviews }: PerformanceScoreCardPr
 
   if (reviews.length === 0) {
     return (
-      <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm p-6">
+      <div className="bg-white dark:bg-[var(--dk-card)] rounded-2xl border border-gray-100 dark:border-[var(--dk-border)] shadow-sm p-6">
         <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">
           Performance
         </p>
@@ -114,13 +114,13 @@ export default function PerformanceScoreCard({ reviews }: PerformanceScoreCardPr
   const pointerPct = metrics.avgRating !== null ? ratingToPercent(metrics.avgRating) : null;
 
   return (
-    <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm p-6 space-y-5">
+    <div className="bg-white dark:bg-[var(--dk-card)] rounded-2xl border border-gray-100 dark:border-[var(--dk-border)] shadow-sm p-6 space-y-5">
 
       {/* â”€â”€ Row 1: Sentiment score â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="flex items-start gap-5 flex-wrap">
         {/* Score ring */}
         <div
-          className={`relative flex-shrink-0 w-20 h-20 rounded-full ring-4 ${scoreStyles.ring} flex items-center justify-center bg-gray-50 dark:bg-[#0C0C18]`}
+          className={`relative flex-shrink-0 w-20 h-20 rounded-full ring-4 ${scoreStyles.ring} flex items-center justify-center bg-gray-50 dark:bg-[var(--dk-bg)]`}
         >
           <span className={`text-2xl font-bold ${scoreStyles.text}`}>{metrics.score}</span>
           <span className="absolute bottom-2 text-[9px] font-medium text-gray-400 dark:text-gray-500">/100</span>
@@ -146,7 +146,7 @@ export default function PerformanceScoreCard({ reviews }: PerformanceScoreCardPr
       </div>
 
       {/* â”€â”€ Divider â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <div className="border-t border-gray-100 dark:border-[#1E1E2E]" />
+      <div className="border-t border-gray-100 dark:border-[var(--dk-border)]" />
 
       {/* â”€â”€ Row 2: Star rating â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {metrics.avgRating !== null && seg !== null && pointerPct !== null ? (

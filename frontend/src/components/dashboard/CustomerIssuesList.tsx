@@ -1,4 +1,4 @@
-type ImpactLevel = 'high' | 'medium' | 'low';
+﻿type ImpactLevel = 'high' | 'medium' | 'low';
 
 interface Issue {
   id: string;
@@ -45,7 +45,7 @@ function IssueItem({ issue, rank }: { issue: Issue; rank: number }) {
 
 export default function CustomerIssuesList({ issues }: CustomerIssuesListProps) {
   return (
-    <div className="bg-white dark:bg-[#13131F] rounded-2xl border border-gray-100 dark:border-[#1E1E2E] shadow-sm p-5">
+    <div className="bg-white dark:bg-[var(--dk-card)] rounded-2xl border border-gray-100 dark:border-[var(--dk-border)] shadow-sm p-5">
       <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-4">Customer issues</p>
       {issues.length === 0 ? (
         <div className="flex items-start gap-3 py-2">

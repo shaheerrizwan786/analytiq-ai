@@ -31,6 +31,43 @@
   --vt-orb1:  rgba(155, 35, 53, 0.28);
   --vt-orb2:  rgba(212, 146, 58, 0.18);
   --vt-orb3:  rgba(184, 92, 42, 0.12);
+
+  /* Dark surface tokens — warm restaurant (default) */
+  --dk-bg:      #1A0C0E;
+  --dk-via:     #1D0E11;
+  --dk-card:    #211518;
+  --dk-alt:     #221015;
+  --dk-tint:    #2A1215;
+  --dk-icon-bg: #3D1C20;
+  --dk-border:  #3D1C20;
+  --dk-accent:  #9B2335;
+  --dk-accent2: #C0602A;
+  --dk-accent3: #D4923A;
+}
+
+/* Cool (violet/indigo/cyan) dark theme — triggered by data-vt="cool" on <html> */
+html.dark[data-vt="cool"] {
+  --background: #0C0C18;
+  --foreground: #E8E4F5;
+  --vt-from:  #7C3AED;
+  --vt-mid:   #8B5CF6;
+  --vt-to:    #22D3EE;
+  --vt-bg:    #0C0C18;
+  --vt-orb1:  rgba(124, 58, 237, 0.28);
+  --vt-orb2:  rgba(34, 211, 238, 0.18);
+  --vt-orb3:  rgba(139, 92, 246, 0.12);
+
+  /* Dark surface tokens — cool violet/indigo */
+  --dk-bg:      #0C0C18;
+  --dk-via:     #0F0F1F;
+  --dk-card:    #13131F;
+  --dk-alt:     #1A1A2E;
+  --dk-tint:    #252540;
+  --dk-icon-bg: #1E1840;
+  --dk-border:  #1E1E2E;
+  --dk-accent:  #7C3AED;
+  --dk-accent2: #8B5CF6;
+  --dk-accent3: #22D3EE;
 }
 
 /* Utility: gradient text using visual theme colours */

@@ -2,31 +2,37 @@
 
 import { useState, useEffect } from 'react';
 import { getSession, clearSession } from '@/lib/auth';
-import { toggleTheme, getTheme, type Theme } from '@/lib/theme';
+import { toggleTheme, getTheme, getVariant, setVariant, type Theme, type Variant } from '@/lib/theme';
 import AuthModal from '@/components/auth/AuthModal';
 import { useAppMode } from '@/lib/modeContext';
 
 export default function Navbar() {
   const [session, setSession] = useState<string | null>(null);
   const [theme, setThemeState] = useState<Theme>('light');
+  const [variant, setVariantState] = useState<Variant>('warm');
   const [showModal, setShowModal] = useState(false);
   const { mode, restaurantName } = useAppMode();
 
   useEffect(() => {
     setSession(getSession());
     setThemeState(getTheme());
+    setVariantState(getVariant());
   }, []);
 
   function handleSignOut() {
     clearSession();
     setSession(null);
-    // Reload so page.tsx re-checks session and clears auto-fill
     window.location.reload();
   }
 
   function handleThemeToggle() {
     const next = toggleTheme();
     setThemeState(next);
+  }
+
+  function handleVariantToggle(v: Variant) {
+    setVariant(v);
+    setVariantState(v);
   }
 
   function handleAuthSuccess(email: string) {
@@ -36,7 +42,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="w-full border-b border-gray-200/70 dark:border-[#3D1C20] bg-white/90 dark:bg-[#1A0C0E]/95 backdrop-blur-sm transition-colors">
+      <header className="w-full border-b border-gray-200/70 dark:border-[var(--dk-border)] bg-white/90 dark:bg-[var(--dk-bg)]/95 backdrop-blur-sm transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           {/* Logo mark + wordmark */}
           <div className="flex items-center gap-2">
@@ -47,12 +53,10 @@ export default function Navbar() {
                   <stop offset="100%" style={{ stopColor: 'var(--vt-to)' }}/>
                 </linearGradient>
               </defs>
-              {/* 4 ascending bars */}
               <rect x="2" y="18" width="4.5" height="7" rx="1.5" fill="url(#logo-grad)"/>
               <rect x="8" y="13" width="4.5" height="12" rx="1.5" fill="url(#logo-grad)"/>
               <rect x="14" y="8" width="4.5" height="17" rx="1.5" fill="url(#logo-grad)"/>
               <rect x="20" y="3" width="4.5" height="22" rx="1.5" fill="url(#logo-grad)"/>
-              {/* Spark above tallest bar */}
               <circle cx="22.25" cy="1.5" r="1.5" fill="var(--vt-spark)"/>
             </svg>
             <span className="text-sm font-semibold tracking-tight">
@@ -72,6 +76,20 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Palette variant toggle — two coloured dots */}
+            <div className="flex items-center gap-1.5" title="Switch colour palette">
+              <button
+                onClick={() => handleVariantToggle('warm')}
+                aria-label="Warm palette"
+                className={`w-3 h-3 rounded-full bg-[#9B2335] transition-all duration-200 ${variant === 'warm' ? 'ring-2 ring-offset-1 ring-[#9B2335] dark:ring-offset-[#0C0C18] scale-110' : 'opacity-40 hover:opacity-70'}`}
+              />
+              <button
+                onClick={() => handleVariantToggle('cool')}
+                aria-label="Cool palette"
+                className={`w-3 h-3 rounded-full bg-[#7C3AED] transition-all duration-200 ${variant === 'cool' ? 'ring-2 ring-offset-1 ring-[#7C3AED] dark:ring-offset-[#1A0C0E] scale-110' : 'opacity-40 hover:opacity-70'}`}
+              />
+            </div>
+
             {/* Dark mode toggle */}
             <button
               onClick={handleThemeToggle}
@@ -79,13 +97,11 @@ export default function Navbar() {
               className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               {theme === 'dark' ? (
-                /* Sun icon */
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="4"/>
                   <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
                 </svg>
               ) : (
-                /* Moon icon */
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
                 </svg>

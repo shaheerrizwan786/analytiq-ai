@@ -1,4 +1,4 @@
-interface TopIssue {
+﻿interface TopIssue {
   title: string;
   reviewCount: number;
   recommendedAction: string;
@@ -15,7 +15,7 @@ export default function WhatToFixFirst({ issue, onAskAdvisor }: WhatToFixFirstPr
 
   if (noIssues) {
     return (
-      <div className="bg-gradient-to-r from-emerald-50 to-white dark:from-emerald-950/20 dark:to-[#13131F] rounded-2xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm p-6 border-l-4 border-l-emerald-400">
+      <div className="bg-gradient-to-r from-emerald-50 to-white dark:from-emerald-950/20 dark:to-[var(--dk-card)] rounded-2xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm p-6 border-l-4 border-l-emerald-400">
         <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-4">✦ What to do next</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -64,7 +64,7 @@ export default function WhatToFixFirst({ issue, onAskAdvisor }: WhatToFixFirstPr
   }
 
   return (
-    <div className="bg-gradient-to-r from-orange-50 to-white dark:from-orange-950/30 dark:to-[#13131F] rounded-2xl border border-orange-100 dark:border-orange-900/30 shadow-sm p-6 border-l-4 border-l-orange-400">
+    <div className="bg-gradient-to-r from-orange-50 to-white dark:from-orange-950/30 dark:to-[var(--dk-card)] rounded-2xl border border-orange-100 dark:border-orange-900/30 shadow-sm p-6 border-l-4 border-l-orange-400">
       <p className="text-xs font-medium text-orange-500 dark:text-orange-400 uppercase tracking-wide mb-4">🔥 What to fix first</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

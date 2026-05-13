@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Card from '@/components/ui/Card';
@@ -516,7 +516,7 @@ function AnalyzeForm({
           </button>
 
           <div className="flex justify-center mb-6">
-            <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-[#13131F]/80 backdrop-blur-sm border border-gray-100 dark:border-[#1E1E2E] rounded-full px-3 py-1.5">
+            <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-[var(--dk-card)]/80 backdrop-blur-sm border border-gray-100 dark:border-[var(--dk-border)] rounded-full px-3 py-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Analysing reviews from Google &middot; TripAdvisor
             </div>
