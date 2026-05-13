@@ -3,27 +3,19 @@
 import { useState, useEffect } from 'react';
 import { getSession, clearSession } from '@/lib/auth';
 import { toggleTheme, getTheme, type Theme } from '@/lib/theme';
-import { getVisualTheme, setVisualTheme, VISUAL_THEMES, type VisualTheme } from '@/lib/visualTheme';
 import AuthModal from '@/components/auth/AuthModal';
 import { useAppMode } from '@/lib/modeContext';
 
 export default function Navbar() {
   const [session, setSession] = useState<string | null>(null);
   const [theme, setThemeState] = useState<Theme>('light');
-  const [vt, setVT] = useState<VisualTheme>('midnight');
   const [showModal, setShowModal] = useState(false);
   const { mode, restaurantName } = useAppMode();
 
   useEffect(() => {
     setSession(getSession());
     setThemeState(getTheme());
-    setVT(getVisualTheme());
   }, []);
-
-  function handleSetVT(next: VisualTheme) {
-    setVisualTheme(next);
-    setVT(next);
-  }
 
   function handleSignOut() {
     clearSession();
@@ -44,7 +36,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="w-full border-b border-gray-100 dark:border-[#1E1E2E] bg-white/80 dark:bg-[#0C0C18]/90 backdrop-blur-sm transition-colors">
+      <header className="w-full border-b border-gray-200/70 dark:border-[#3D1C20] bg-white/90 dark:bg-[#1A0C0E]/95 backdrop-blur-sm transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           {/* Logo mark + wordmark */}
           <div className="flex items-center gap-2">
@@ -61,7 +53,7 @@ export default function Navbar() {
               <rect x="14" y="8" width="4.5" height="17" rx="1.5" fill="url(#logo-grad)"/>
               <rect x="20" y="3" width="4.5" height="22" rx="1.5" fill="url(#logo-grad)"/>
               {/* Spark above tallest bar */}
-              <circle cx="22.25" cy="1.5" r="1.5" fill="#F97316"/>
+              <circle cx="22.25" cy="1.5" r="1.5" fill="var(--vt-spark)"/>
             </svg>
             <span className="text-sm font-semibold tracking-tight">
               <span className="vt-gradient-text">Analytiq</span>
@@ -80,22 +72,6 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Visual theme picker */}
-            <div className="flex items-center gap-1" role="group" aria-label="Visual theme">
-              {VISUAL_THEMES.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => handleSetVT(t.id)}
-                  title={`${t.label} theme`}
-                  aria-pressed={vt === t.id}
-                  className={`w-3.5 h-3.5 rounded-full transition-all duration-150 hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-white/40 ${
-                    vt === t.id ? 'ring-2 ring-offset-1 ring-white/40 scale-110' : 'opacity-60'
-                  }`}
-                  style={{ backgroundColor: t.dot }}
-                />
-              ))}
-            </div>
-
             {/* Dark mode toggle */}
             <button
               onClick={handleThemeToggle}

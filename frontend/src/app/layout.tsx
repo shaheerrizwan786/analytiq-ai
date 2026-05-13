@@ -33,10 +33,10 @@ export default function RootLayout({
     >
       <head>
         {/* Inline script: runs synchronously before first paint to avoid FOUC */}
-        {/* Inline script: runs synchronously before first paint to avoid FOUC for both dark mode and visual theme */}
+        {/* Inline script: runs synchronously before first paint to avoid FOUC */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('ui:theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}var vt=localStorage.getItem('ui:visual-theme');if(vt&&vt!=='midnight'){document.documentElement.setAttribute('data-vt',vt);}else{document.documentElement.removeAttribute('data-vt');}}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('ui:theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();`,
           }}
         />
       </head>

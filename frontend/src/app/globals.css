@@ -6,53 +6,31 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
-  --brand-from: #6C35E0;
-  --brand-to: #22D3EE;
-  --cta: #F97316;
-  --card-dark: #13131F;
-  --card-border-dark: #1E1E2E;
+  --brand-from: #9B2335;
+  --brand-to:   #D4923A;
+  --cta:        #9B2335;
+  --card-dark:  #2A1215;
+  --card-border-dark: #3D1C20;
 
-  /* Visual theme vars — Midnight (default) */
-  --vt-from: #7C3AED;
-  --vt-mid:  #C026D3;
-  --vt-to:   #22D3EE;
-  --vt-cta:  #F97316;
-  --vt-spark: #F97316;
-  --vt-bg:   #0C0C18;
-  --vt-orb1: rgba(109, 40, 217, 0.20);
-  --vt-orb2: rgba(34, 211, 238, 0.15);
-  --vt-orb3: rgba(249, 115, 22, 0.10);
-}
-
-/* Visual theme — Bistro (warm amber/rose, espresso vibes) */
-[data-vt="bistro"] {
-  --vt-from:  #D97706;
-  --vt-mid:   #E11D48;
-  --vt-to:    #F43F5E;
-  --vt-cta:   #DC2626;
-  --vt-spark: #FCD34D;
-  --vt-bg:    #18090A;
-  --vt-orb1:  rgba(217, 119, 6, 0.22);
-  --vt-orb2:  rgba(244, 63, 94, 0.15);
-  --vt-orb3:  rgba(220, 38, 38, 0.10);
-}
-
-/* Visual theme — Fresh (emerald/sky, modern healthy) */
-[data-vt="fresh"] {
-  --vt-from:  #10B981;
-  --vt-mid:   #06B6D4;
-  --vt-to:    #0EA5E9;
-  --vt-cta:   #16A34A;
-  --vt-spark: #34D399;
-  --vt-bg:    #071410;
-  --vt-orb1:  rgba(16, 185, 129, 0.20);
-  --vt-orb2:  rgba(14, 165, 233, 0.15);
-  --vt-orb3:  rgba(132, 204, 22, 0.10);
+  /* Restaurant visual theme vars (light mode default) */
+  --vt-from:  #9B2335;   /* burgundy maroon  */
+  --vt-mid:   #C0602A;   /* terracotta rust  */
+  --vt-to:    #D4923A;   /* warm amber gold  */
+  --vt-cta:   #9B2335;
+  --vt-spark: #E8B56A;
+  --vt-bg:    #FBF4EC;   /* warm parchment cream */
+  --vt-orb1:  rgba(155, 35, 53, 0.14);
+  --vt-orb2:  rgba(212, 146, 58, 0.10);
+  --vt-orb3:  rgba(184, 92, 42, 0.07);
 }
 
 .dark {
-  --background: #0C0C18;
-  --foreground: #f1f5f9;
+  --background: #1A0C0E;   /* deep espresso  */
+  --foreground: #F5EDE4;   /* warm cream     */
+  --vt-bg:    #1A0C0E;
+  --vt-orb1:  rgba(155, 35, 53, 0.28);
+  --vt-orb2:  rgba(212, 146, 58, 0.18);
+  --vt-orb3:  rgba(184, 92, 42, 0.12);
 }
 
 /* Utility: gradient text using visual theme colours */

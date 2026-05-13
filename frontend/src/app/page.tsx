@@ -13,7 +13,7 @@ import { analyzeRestaurantStream, AnalyzeResponse, ProgressUpdate } from '@/lib/
 import { getSession, getSavedRestaurant, saveRestaurant } from '@/lib/auth';
 import { useAppMode } from '@/lib/modeContext';
 import { demoDashboardData } from '@/lib/demoData';
-import { getVisualTheme, setVisualTheme, VISUAL_THEMES, type VisualTheme } from '@/lib/visualTheme';
+import { toggleTheme, getTheme, type Theme } from '@/lib/theme';
 
 function mapToUi(api: AnalyzeResponse, name: string, location: string): DashboardData {
   const insights = api.insights ?? {};
@@ -145,7 +145,7 @@ function LogoMark({ size = 36 }: { size?: number }) {
       <rect x="8" y="13" width="4.5" height="12" rx="1.5" fill="url(#landing-logo-grad)" />
       <rect x="14" y="8" width="4.5" height="17" rx="1.5" fill="url(#landing-logo-grad)" />
       <rect x="20" y="3" width="4.5" height="22" rx="1.5" fill="url(#landing-logo-grad)" />
-      <circle cx="22.25" cy="1.5" r="1.5" fill="#F97316" />
+      <circle cx="22.25" cy="1.5" r="1.5" fill="var(--vt-spark)" />
     </svg>
   );
 }
@@ -164,17 +164,17 @@ function LandingPage({
 }) {
   const [showAuth, setShowAuth] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [vt, setVT] = useState<VisualTheme>('midnight');
+  const [theme, setThemeState] = useState<Theme>('dark');
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 60);
-    setVT(getVisualTheme());
+    setThemeState(getTheme());
     return () => clearTimeout(t);
   }, []);
 
-  function handleSetTheme(next: VisualTheme) {
-    setVisualTheme(next);
-    setVT(next);
+  function handleThemeToggle() {
+    const next = toggleTheme();
+    setThemeState(next);
   }
 
   function handleAuthSuccess(email: string) {
@@ -197,28 +197,30 @@ function LandingPage({
           <LogoMark size={32} />
           <span className="text-base font-semibold tracking-tight">
             <span className="vt-gradient-text">Analytiq</span>
-            <span className="text-gray-200"> AI</span>
+            <span className="text-gray-700 dark:text-gray-200"> AI</span>
           </span>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Visual theme picker */}
-          <div className="flex items-center gap-1.5" role="group" aria-label="Visual theme">
-            {VISUAL_THEMES.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => handleSetTheme(t.id)}
-                title={`${t.label} theme — ${t.desc}`}
-                aria-pressed={vt === t.id}
-                className={`w-4 h-4 rounded-full transition-all duration-150 hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
-                  vt === t.id ? 'ring-2 ring-offset-1 ring-offset-transparent ring-white/50 scale-110' : ''
-                }`}
-                style={{ backgroundColor: t.dot }}
-              />
-            ))}
-          </div>
+        <div className="flex items-center gap-3">
+          {/* Dark / light toggle */}
+          <button
+            onClick={handleThemeToggle}
+            aria-label="Toggle dark mode"
+            className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+          >
+            {theme === 'dark' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="4"/>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            )}
+          </button>
           <button
             onClick={() => setShowAuth(true)}
-            className="text-sm font-medium text-gray-400 hover:text-gray-100 transition-colors"
+            className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
           >
             Sign in
           </button>
@@ -233,13 +235,13 @@ function LandingPage({
           }`}
         >
           {/* Status badge */}
-          <div className="inline-flex items-center gap-2 mb-8 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-gray-400 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 mb-8 rounded-full border border-gray-300/60 dark:border-white/10 bg-gray-100/50 dark:bg-white/5 px-4 py-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Real-time review intelligence for restaurants
           </div>
 
           {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.15]">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white leading-[1.15]">
             Turn customer reviews into
             <br />
             <span className="vt-gradient-text">
@@ -248,7 +250,7 @@ function LandingPage({
           </h1>
 
           {/* Subtext */}
-          <p className="mt-6 text-base sm:text-lg text-gray-400 max-w-xl mx-auto leading-relaxed">
+          <p className="mt-6 text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto leading-relaxed">
             Analytiq aggregates reviews from Google and TripAdvisor &mdash; then surfaces
             exactly what to fix and what to celebrate.
           </p>
@@ -264,21 +266,40 @@ function LandingPage({
             </button>
             <button
               onClick={onAnalyze}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-gray-100 font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03] backdrop-blur-sm"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300/70 dark:border-white/15 bg-transparent dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-100 font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03]"
             >
               Start analysis
             </button>
           </div>
 
           {/* Social proof */}
-          <p className="mt-10 text-xs text-gray-600">
+          <p className="mt-10 text-xs text-gray-500 dark:text-gray-600">
             Trusted by independent restaurants &middot; No credit card required &middot; Results in under 2 minutes
           </p>
+        </div>
+
+        {/* Decorative restaurant utensils watermark */}
+        <div
+          className="pointer-events-none select-none absolute bottom-0 right-6 sm:right-16"
+          aria-hidden="true"
+          style={{ color: 'var(--vt-from)', opacity: 0.08 }}
+        >
+          <svg width="68" height="170" viewBox="0 0 68 170" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+            {/* Fork */}
+            <line x1="8"  y1="4"  x2="8"  y2="44" />
+            <line x1="18" y1="4"  x2="18" y2="44" />
+            <line x1="28" y1="4"  x2="28" y2="44" />
+            <path d="M8 44 Q18 58 28 44" fill="none" />
+            <line x1="18" y1="58" x2="18" y2="166" />
+            {/* Spoon */}
+            <ellipse cx="55" cy="20" rx="10" ry="17" />
+            <line x1="55" y1="37" x2="55" y2="166" />
+          </svg>
         </div>
       </main>
 
       {/* Feature strip */}
-      <div className="relative z-10 border-t border-white/5 bg-white/[0.02] backdrop-blur-sm">
+      <div className="relative z-10 border-t border-gray-200/60 dark:border-white/5 bg-gray-50/40 dark:bg-white/[0.02]">
         <div className="max-w-4xl mx-auto px-6 py-6 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
           {[
             {
@@ -311,8 +332,8 @@ function LandingPage({
           ].map(({ icon, label, desc }) => (
             <div key={label} className="space-y-2">
               <div className="flex justify-center">{icon}</div>
-              <p className="text-sm font-medium text-gray-300">{label}</p>
-              <p className="text-xs text-gray-600">{desc}</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-600">{desc}</p>
             </div>
           ))}
         </div>
@@ -481,8 +502,8 @@ function AnalyzeForm({
     <AppShell>
       <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="animate-float-blob absolute -top-32 -left-32 w-96 h-96 rounded-full bg-violet-500/20 dark:bg-violet-600/15 blur-3xl" />
-          <div className="animate-float-blob-delay absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-cyan-400/20 dark:bg-cyan-500/10 blur-3xl" />
+          <div className="animate-float-blob absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'var(--vt-orb1)' }} />
+          <div className="animate-float-blob-delay absolute -bottom-32 -right-32 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'var(--vt-orb2)' }} />
         </div>
 
         <div className="relative z-10 w-full max-w-md">
