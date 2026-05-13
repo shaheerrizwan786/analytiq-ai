@@ -21,7 +21,7 @@ router = APIRouter(prefix="/places", tags=["places"])
 def autocomplete_places(
     request: Request,
     input: str = Query(..., min_length=1, max_length=200, description="Search query (e.g., 'Pizza Hut Sydney')"),
-    types: str = Query("establishment", description="Place type filter (establishment includes all food businesses)"),
+    types: str = Query("establishment", description="Place type filter"),
     _: None = Depends(verify_api_key),
 ):
     """

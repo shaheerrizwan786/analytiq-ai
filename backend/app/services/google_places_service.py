@@ -21,6 +21,11 @@ class GooglePlacesService:
         self.apify_client = ApifyClient(settings.apify_api_key) if settings.apify_api_key else None
         self.settings = settings
 
+    _FOOD_TYPES = {
+        "restaurant", "food", "cafe", "bar", "bakery",
+        "meal_takeaway", "meal_delivery", "night_club",
+    }
+
     def autocomplete_places(
         self,
         input_text: str,
@@ -32,15 +37,15 @@ class GooglePlacesService:
 
         Args:
             input_text: Search query (e.g., "Pizza Hut Sydney")
-            types: Place type filter (default: "establishment" for all food-related businesses)
-            components: Country restrictions (e.g., {'country': ['us', 'au']})
+            types: Place type filter (establishment = all businesses)
+            components: Country restrictions (e.g., {'country': ['au']})
 
         Returns:
-            List of place predictions with place_id, description, etc.
+            List of place predictions filtered to food/dining establishments.
         """
         try:
             if components is None:
-                components = {'country': ['us', 'au', 'gb', 'ca', 'nz']}
+                components = {'country': ['au']}
 
             result = self.client.places_autocomplete(
                 input_text=input_text,
@@ -48,8 +53,16 @@ class GooglePlacesService:
                 components=components
             )
 
-            logger.info(f"Autocomplete found {len(result)} suggestions for '{input_text}'")
-            return result
+            # Filter to food-related places only
+            filtered = [
+                p for p in result
+                if self._FOOD_TYPES.intersection(p.get("types", []))
+            ]
+
+            logger.info(
+                f"Autocomplete: {len(result)} total, {len(filtered)} food places for '{input_text}'"
+            )
+            return filtered
 
         except Exception as e:
             logger.error(f"Autocomplete API error: {e}")
