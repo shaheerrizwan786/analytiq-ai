@@ -8,7 +8,7 @@ export default function DashboardHeader({ restaurantName, location, totalReviews
   return (
     <div className="flex items-start justify-between">
       <div>
-        <h1 className="text-2xl font-semibold bg-gradient-to-r from-[#9B2335] to-[#D4923A] dark:from-[#C0602A] dark:to-[#D4923A] bg-clip-text text-transparent">
+        <h1 className="text-2xl font-semibold bg-gradient-to-r from-[var(--accent)] to-[var(--accent-3)] dark:from-[var(--accent-2)] dark:to-[var(--accent-3)] bg-clip-text text-transparent">
           {restaurantName}
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{location}</p>

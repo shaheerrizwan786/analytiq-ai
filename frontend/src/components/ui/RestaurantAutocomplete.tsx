@@ -151,7 +151,7 @@ export default function RestaurantAutocomplete({
           }}
           disabled={isDisabled}
           placeholder={placeholder}
-          className="w-full px-4 py-2.5 text-sm bg-white dark:bg-[var(--dk-alt)] border border-gray-200 dark:border-[var(--dk-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9B2335] dark:focus:ring-[var(--dk-accent)] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+          className="w-full px-4 py-2.5 text-sm bg-white dark:bg-[var(--dk-alt)] border border-gray-200 dark:border-[var(--dk-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] dark:focus:ring-[var(--dk-accent)] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
         />
         {isLoading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">

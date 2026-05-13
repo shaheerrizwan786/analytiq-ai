@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
@@ -119,7 +119,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                   onClick={() => setActiveTab('overview')}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     activeTab === 'overview'
-                      ? 'border-b-2 border-[#9B2335] text-[#9B2335] dark:text-[var(--dk-accent3)]'
+                      ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
@@ -129,7 +129,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                   onClick={() => setActiveTab('reviews')}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     activeTab === 'reviews'
-                      ? 'border-b-2 border-[#9B2335] text-[#9B2335] dark:text-[var(--dk-accent3)]'
+                      ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
@@ -139,7 +139,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                   onClick={() => setActiveTab('trends')}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     activeTab === 'trends'
-                      ? 'border-b-2 border-[#9B2335] text-[#9B2335] dark:text-[var(--dk-accent3)]'
+                      ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
@@ -152,8 +152,8 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                 onClick={() => setChatOpen((o) => !o)}
                 className={`hidden lg:flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                   chatOpen
-                    ? 'bg-[#9B2335] text-white shadow-md shadow-[#9B2335]/30'
-                    : 'bg-gradient-to-r from-[#9B2335] to-[#D4923A] text-white shadow-md shadow-[#9B2335]/25 hover:shadow-lg hover:shadow-[#9B2335]/35 hover:scale-105 active:scale-100'
+                    ? 'bg-[var(--accent)] text-white shadow-md shadow-[var(--accent)]/30'
+                    : 'bg-gradient-to-r from-[var(--accent)] to-[var(--accent-3)] text-white shadow-md shadow-[var(--accent)]/25 hover:shadow-lg hover:shadow-[var(--accent)]/35 hover:scale-105 active:scale-100'
                 }`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>

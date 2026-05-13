@@ -81,12 +81,12 @@ export default function Navbar() {
               <button
                 onClick={() => handleVariantToggle('warm')}
                 aria-label="Warm palette"
-                className={`w-3 h-3 rounded-full bg-[#9B2335] transition-all duration-200 ${variant === 'warm' ? 'ring-2 ring-offset-1 ring-[#9B2335] dark:ring-offset-[#0C0C18] scale-110' : 'opacity-40 hover:opacity-70'}`}
+                className={`w-3 h-3 rounded-full bg-[#9B2335] transition-all duration-200 ${variant === 'warm' ? 'ring-2 ring-offset-1 ring-[#9B2335] dark:ring-offset-[var(--dk-bg)] scale-110' : 'opacity-40 hover:opacity-70'}`}
               />
               <button
                 onClick={() => handleVariantToggle('cool')}
                 aria-label="Cool palette"
-                className={`w-3 h-3 rounded-full bg-[#7C3AED] transition-all duration-200 ${variant === 'cool' ? 'ring-2 ring-offset-1 ring-[#7C3AED] dark:ring-offset-[#1A0C0E] scale-110' : 'opacity-40 hover:opacity-70'}`}
+                className={`w-3 h-3 rounded-full bg-[#7C3AED] transition-all duration-200 ${variant === 'cool' ? 'ring-2 ring-offset-1 ring-[#7C3AED] dark:ring-offset-[var(--dk-bg)] scale-110' : 'opacity-40 hover:opacity-70'}`}
               />
             </div>
 

@@ -6,58 +6,83 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+
+  /* === Accent tokens (theme-switchable) === */
+  --accent:    #9B2335;   /* primary — maroon */
+  --accent-2:  #C0602A;   /* secondary — terracotta */
+  --accent-3:  #D4923A;   /* tertiary — amber */
+  --accent-bg: #F9ECE8;   /* light tint */
+
+  /* Legacy aliases used by btn-vt-cta etc. */
   --brand-from: #9B2335;
   --brand-to:   #D4923A;
   --cta:        #9B2335;
   --card-dark:  #2A1215;
   --card-border-dark: #3D1C20;
 
-  /* Restaurant visual theme vars (light mode default) */
-  --vt-from:  #9B2335;   /* burgundy maroon  */
-  --vt-mid:   #C0602A;   /* terracotta rust  */
-  --vt-to:    #D4923A;   /* warm amber gold  */
-  --vt-cta:   #9B2335;
-  --vt-spark: #E8B56A;
-  --vt-bg:    #FBF4EC;   /* warm parchment cream */
-  --vt-orb1:  rgba(155, 35, 53, 0.14);
-  --vt-orb2:  rgba(212, 146, 58, 0.10);
-  --vt-orb3:  rgba(184, 92, 42, 0.07);
+  /* Visual theme gradient + decoration vars */
+  --vt-from:   #9B2335;
+  --vt-mid:    #C0602A;
+  --vt-to:     #D4923A;
+  --vt-cta:    #9B2335;
+  --vt-spark:  #E8B56A;
+  --vt-bg:     #FBF4EC;
+  --vt-bg-end: rgba(255, 237, 213, 0.2);
+  --vt-orb1:   rgba(155, 35, 53, 0.14);
+  --vt-orb2:   rgba(212, 146, 58, 0.10);
+  --vt-orb3:   rgba(184, 92, 42, 0.07);
 }
 
 .dark {
-  --background: #1A0C0E;   /* deep espresso  */
-  --foreground: #F5EDE4;   /* warm cream     */
-  --vt-bg:    #1A0C0E;
-  --vt-orb1:  rgba(155, 35, 53, 0.28);
-  --vt-orb2:  rgba(212, 146, 58, 0.18);
-  --vt-orb3:  rgba(184, 92, 42, 0.12);
+  --background: #100D0D;   /* near-black, barely warm */
+  --foreground: #F5EDE4;
+  --vt-bg:     #100D0D;
+  --vt-orb1:   rgba(155, 35, 53, 0.18);
+  --vt-orb2:   rgba(212, 146, 58, 0.11);
+  --vt-orb3:   rgba(184, 92, 42, 0.07);
 
-  /* Dark surface tokens — warm restaurant (default) */
-  --dk-bg:      #1A0C0E;
-  --dk-via:     #1D0E11;
-  --dk-card:    #211518;
-  --dk-alt:     #221015;
-  --dk-tint:    #2A1215;
-  --dk-icon-bg: #3D1C20;
-  --dk-border:  #3D1C20;
+  /* Dark surface tokens — warm default. Near-black with the faintest warm tint. */
+  --dk-bg:      #100D0D;
+  --dk-via:     #130F10;
+  --dk-card:    #181414;
+  --dk-alt:     #151212;
+  --dk-tint:    #1E1A1A;
+  --dk-icon-bg: #2B2223;
+  --dk-border:  #2B2223;
   --dk-accent:  #9B2335;
   --dk-accent2: #C0602A;
   --dk-accent3: #D4923A;
 }
 
-/* Cool (violet/indigo/cyan) dark theme — triggered by data-vt="cool" on <html> */
+/* =====================================================
+   Cool violet/indigo/cyan theme
+   Applied to BOTH light and dark — no .dark scoping here
+   ===================================================== */
+html[data-vt="cool"] {
+  --accent:    #7C3AED;
+  --accent-2:  #8B5CF6;
+  --accent-3:  #22D3EE;
+  --accent-bg: #EDE9FE;
+  --vt-from:   #7C3AED;
+  --vt-mid:    #8B5CF6;
+  --vt-to:     #22D3EE;
+  --vt-cta:    #7C3AED;
+  --vt-spark:  #67E8F9;
+  --vt-bg:     #F5F3FF;
+  --vt-bg-end: rgba(245, 243, 255, 0.2);
+  --vt-orb1:   rgba(124, 58, 237, 0.14);
+  --vt-orb2:   rgba(34, 211, 238, 0.10);
+  --vt-orb3:   rgba(139, 92, 246, 0.07);
+}
+
+/* Cool theme — dark mode surface overrides */
 html.dark[data-vt="cool"] {
   --background: #0C0C18;
   --foreground: #E8E4F5;
-  --vt-from:  #7C3AED;
-  --vt-mid:   #8B5CF6;
-  --vt-to:    #22D3EE;
-  --vt-bg:    #0C0C18;
-  --vt-orb1:  rgba(124, 58, 237, 0.28);
-  --vt-orb2:  rgba(34, 211, 238, 0.18);
-  --vt-orb3:  rgba(139, 92, 246, 0.12);
-
-  /* Dark surface tokens — cool violet/indigo */
+  --vt-bg:      #0C0C18;
+  --vt-orb1:    rgba(124, 58, 237, 0.28);
+  --vt-orb2:    rgba(34, 211, 238, 0.18);
+  --vt-orb3:    rgba(139, 92, 246, 0.12);
   --dk-bg:      #0C0C18;
   --dk-via:     #0F0F1F;
   --dk-card:    #13131F;
@@ -65,8 +90,8 @@ html.dark[data-vt="cool"] {
   --dk-tint:    #252540;
   --dk-icon-bg: #1E1840;
   --dk-border:  #1E1E2E;
-  --dk-accent:  #7C3AED;
-  --dk-accent2: #8B5CF6;
+  --dk-accent:  #8B5CF6;
+  --dk-accent2: #A78BFA;
   --dk-accent3: #22D3EE;
 }
 
@@ -86,6 +111,11 @@ html.dark[data-vt="cool"] {
 }
 .btn-vt-cta:hover  { filter: brightness(1.1); }
 .btn-vt-cta:active { filter: brightness(0.9); }
+
+/* Utility: FAB / floating button shadow that follows the accent theme */
+.fab-cta-shadow {
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--accent) 50%, transparent);
+}
 
 @theme inline {
   --color-background: var(--background);

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useMemo } from 'react';
 
@@ -133,7 +133,7 @@ export default function RecentReviewsList({ reviews, onViewAll }: RecentReviewsL
         {onViewAll && (
           <button
             onClick={onViewAll}
-            className="text-xs font-medium text-[#9B2335] hover:text-[#C0602A] transition-colors"
+            className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-2)] transition-colors"
           >
             View all →
           </button>

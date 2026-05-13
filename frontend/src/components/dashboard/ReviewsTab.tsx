@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useMemo } from 'react';
 
@@ -146,7 +146,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search review text…"
-          className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[var(--dk-card)] text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#C0602A]/40"
+          className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[var(--dk-card)] text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-2)]/40"
         />
         {query && (
           <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Clear search">
@@ -160,7 +160,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
         {/* Source pills */}
         <button
           onClick={() => setSourceFilter('all')}
-          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === 'all' ? 'bg-[#9B2335] text-white border-[#9B2335]' : 'bg-white dark:bg-[var(--dk-card)] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-[#C0602A]'}`}
+          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === 'all' ? 'bg-[var(--accent)] text-white border-[var(--accent)]' : 'bg-white dark:bg-[var(--dk-card)] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-[var(--accent-2)]'}`}
         >
           All sources
         </button>
@@ -168,7 +168,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
           <button
             key={src}
             onClick={() => setSourceFilter(src)}
-            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === src ? 'bg-[#9B2335] text-white border-[#9B2335]' : 'bg-white dark:bg-[var(--dk-card)] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-[#C0602A]'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sourceFilter === src ? 'bg-[var(--accent)] text-white border-[var(--accent)]' : 'bg-white dark:bg-[var(--dk-card)] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-[var(--accent-2)]'}`}
           >
             {PLATFORM_LABELS[src]}{sourceCounts[src] > 0 ? ` (${sourceCounts[src]})` : ''}
           </button>
@@ -181,7 +181,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
           <button
             key={s}
             onClick={() => setSentimentFilter(s)}
-            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sentimentFilter === s ? 'bg-[#9B2335] text-white border-[#9B2335]' : 'bg-white dark:bg-[var(--dk-card)] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-[#C0602A]'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${sentimentFilter === s ? 'bg-[var(--accent)] text-white border-[var(--accent)]' : 'bg-white dark:bg-[var(--dk-card)] text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-[var(--accent-2)]'}`}
           >
             {s === 'all' ? 'All' : SENTIMENT_LABELS[s]}
           </button>
@@ -191,7 +191,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as typeof sortOrder)}
-            className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-white dark:bg-[var(--dk-card)] text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-[#9B2335]"
+            className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-white dark:bg-[var(--dk-card)] text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
           >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
@@ -209,7 +209,7 @@ export default function ReviewsTab({ reviews }: ReviewsTabProps) {
             : `${filtered.length} of ${reviews.length} review${reviews.length !== 1 ? 's' : ''}`}
         </p>
         {isFiltered && (
-          <button onClick={resetFilters} className="text-xs text-[#9B2335] hover:text-[#C0602A] underline">
+          <button onClick={resetFilters} className="text-xs text-[var(--accent)] hover:text-[var(--accent-2)] underline">
             Clear filters
           </button>
         )}

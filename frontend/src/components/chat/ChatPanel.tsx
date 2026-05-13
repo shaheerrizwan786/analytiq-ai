@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
@@ -67,7 +67,7 @@ function MsgContent({ text }: { text: string }) {
           const content = line.replace(/^[-*•]\s/, '');
           return (
             <div key={i} className="flex gap-2">
-              <span className="text-[#D4923A] mt-0.5 shrink-0">•</span>
+              <span className="text-[var(--accent-3)] mt-0.5 shrink-0">•</span>
               <span>{renderInline(content)}</span>
             </div>
           );
@@ -122,7 +122,7 @@ function ConversationList({
         </div>
         <button
           onClick={onNew}
-          className="flex items-center gap-1 text-xs font-medium bg-[#9B2335] hover:bg-[#C0602A] text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+          className="flex items-center gap-1 text-xs font-medium bg-[var(--accent)] hover:bg-[var(--accent-2)] text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
           New chat
@@ -134,13 +134,13 @@ function ConversationList({
         <div className="flex px-4 pt-3 gap-2">
           <button
             onClick={() => setShowArchived(false)}
-            className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${!showArchived ? 'bg-[#9B2335]/15 text-[#9B2335] dark:bg-[var(--dk-accent)]/20 dark:text-[var(--dk-accent3)]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${!showArchived ? 'bg-[var(--accent)]/15 text-[var(--accent)] dark:bg-[var(--dk-accent)]/20 dark:text-[var(--dk-accent3)]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
           >
             Active ({active.length})
           </button>
           <button
             onClick={() => setShowArchived(true)}
-            className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${showArchived ? 'bg-[#9B2335]/15 text-[#9B2335] dark:bg-[var(--dk-accent)]/20 dark:text-[var(--dk-accent3)]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${showArchived ? 'bg-[var(--accent)]/15 text-[var(--accent)] dark:bg-[var(--dk-accent)]/20 dark:text-[var(--dk-accent3)]' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
           >
             Archived ({archived.length})
           </button>
@@ -151,14 +151,14 @@ function ConversationList({
       <div className="flex-1 overflow-y-auto py-2">
         {visible.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-6 text-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[#9B2335]/10 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#9B2335] dark:text-[var(--dk-accent3)]"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <div className="w-12 h-12 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)] dark:text-[var(--dk-accent3)]"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400">No conversations yet</p>
             <p className="text-xs text-gray-400 dark:text-gray-500">Start a new chat to ask questions about your reviews</p>
             <button
               onClick={onNew}
-              className="mt-1 text-xs font-medium text-[#9B2335] dark:text-[var(--dk-accent3)] hover:text-[#C0602A] dark:hover:text-[#E8B56A] underline underline-offset-2"
+              className="mt-1 text-xs font-medium text-[var(--accent)] dark:text-[var(--dk-accent3)] hover:text-[var(--accent-2)] dark:hover:text-[var(--dk-accent3)] underline underline-offset-2"
             >
               Start your first conversation
             </button>
@@ -170,8 +170,8 @@ function ConversationList({
               className="relative group flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-[var(--dk-tint)] cursor-pointer transition-colors"
               onClick={() => { if (menuId !== c.id) onSelect(c.id); }}
             >
-              <div className="w-8 h-8 shrink-0 rounded-full bg-[#F9ECE8] dark:bg-[var(--dk-icon-bg)] flex items-center justify-center mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#9B2335] dark:text-[var(--dk-accent3)]"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <div className="w-8 h-8 shrink-0 rounded-full bg-[var(--accent-bg)] dark:bg-[var(--dk-icon-bg)] flex items-center justify-center mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)] dark:text-[var(--dk-accent3)]"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{c.title}</p>
@@ -356,14 +356,14 @@ function ActiveChat({
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.role === 'assistant' && (
-              <div className="w-7 h-7 shrink-0 rounded-full bg-[#F9ECE8] dark:bg-[var(--dk-icon-bg)] flex items-center justify-center mr-2 mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#9B2335] dark:text-[var(--dk-accent3)]"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <div className="w-7 h-7 shrink-0 rounded-full bg-[var(--accent-bg)] dark:bg-[var(--dk-icon-bg)] flex items-center justify-center mr-2 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)] dark:text-[var(--dk-accent3)]"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
               </div>
             )}
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
                 msg.role === 'user'
-                  ? 'bg-[#9B2335] text-white rounded-br-sm'
+                  ? 'bg-[var(--accent)] text-white rounded-br-sm'
                   : 'bg-gray-100 dark:bg-[var(--dk-tint)] text-gray-800 dark:text-gray-200 rounded-bl-sm border border-gray-200 dark:border-[var(--dk-border)]'
               }`}
             >
@@ -377,14 +377,14 @@ function ActiveChat({
 
         {loading && (
           <div className="flex justify-start">
-            <div className="w-7 h-7 shrink-0 rounded-full bg-[#F9ECE8] dark:bg-[var(--dk-icon-bg)] flex items-center justify-center mr-2 mt-0.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#9B2335] dark:text-[var(--dk-accent3)]"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <div className="w-7 h-7 shrink-0 rounded-full bg-[var(--accent-bg)] dark:bg-[var(--dk-icon-bg)] flex items-center justify-center mr-2 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)] dark:text-[var(--dk-accent3)]"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
             </div>
             <div className="bg-gray-100 dark:bg-[var(--dk-tint)] border border-gray-200 dark:border-[var(--dk-border)] rounded-2xl rounded-bl-sm px-4 py-3">
               <div className="flex gap-1 items-center h-4">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#C0602A] animate-bounce [animation-delay:0ms]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[#C0602A] animate-bounce [animation-delay:150ms]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[#C0602A] animate-bounce [animation-delay:300ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-2)] animate-bounce [animation-delay:0ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-2)] animate-bounce [animation-delay:150ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-2)] animate-bounce [animation-delay:300ms]" />
               </div>
             </div>
           </div>
@@ -395,7 +395,7 @@ function ActiveChat({
 
       {/* Input */}
         <div className="px-4 pb-4 pt-2 shrink-0 border-t border-gray-200 dark:border-[var(--dk-border)]">
-        <div className="flex items-end gap-2 bg-gray-50 dark:bg-[var(--dk-alt)] border border-gray-300 dark:border-[var(--dk-border)] rounded-2xl px-4 py-2 focus-within:border-[#C0602A] dark:focus-within:border-[var(--dk-accent)]/70 transition-colors">
+        <div className="flex items-end gap-2 bg-gray-50 dark:bg-[var(--dk-alt)] border border-gray-300 dark:border-[var(--dk-border)] rounded-2xl px-4 py-2 focus-within:border-[var(--accent-2)] dark:focus-within:border-[var(--dk-accent)]/70 transition-colors">
           <textarea
             ref={inputRef}
             value={input}

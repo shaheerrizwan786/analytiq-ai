@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useMemo } from 'react';
 import { calcPerformanceMetrics, type ReviewInput } from '@/lib/analytics';
@@ -17,10 +17,10 @@ const SCORE_STYLES = {
     bar: 'bg-gradient-to-r from-emerald-400 to-emerald-500',
   },
   Good: {
-    ring: 'ring-[#C0602A] dark:ring-[#D4923A]',
-    text: 'text-[#9B2335] dark:text-[var(--dk-accent3)]',
-    badge: 'bg-[#F9ECE8] dark:bg-[var(--dk-tint)] text-[#7A1C2A] dark:text-[var(--dk-accent3)]',
-    bar: 'bg-gradient-to-r from-[#C0602A] to-[#D4923A]',
+    ring: 'ring-[var(--accent-2)] dark:ring-[var(--accent-3)]',
+    text: 'text-[var(--accent)] dark:text-[var(--dk-accent3)]',
+    badge: 'bg-[var(--accent-bg)] dark:bg-[var(--dk-tint)] text-[var(--accent)] dark:text-[var(--dk-accent3)]',
+    bar: 'bg-gradient-to-r from-[var(--accent-2)] to-[var(--accent-3)]',
   },
   'Needs Attention': {
     ring: 'ring-amber-400 dark:ring-amber-500',
@@ -49,7 +49,7 @@ const RATING_SEGMENTS = [
   { label: 'Poor',         min: 1.0, max: 2.5, bar: 'bg-rose-400',   text: 'text-rose-600 dark:text-rose-400',   badge: 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300' },
   { label: 'Below Avg',    min: 2.5, max: 3.5, bar: 'bg-orange-400', text: 'text-orange-600 dark:text-orange-400', badge: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300' },
   { label: 'Average',      min: 3.5, max: 4.0, bar: 'bg-amber-400',  text: 'text-amber-600 dark:text-amber-400',  badge: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300' },
-  { label: 'Good',         min: 4.0, max: 4.5, bar: 'bg-[#9B2335]', text: 'text-[#9B2335] dark:text-[var(--dk-accent3)]', badge: 'bg-[#F9ECE8] dark:bg-[var(--dk-tint)] text-[#7A1C2A] dark:text-[var(--dk-accent3)]' },
+  { label: 'Good',         min: 4.0, max: 4.5, bar: 'bg-[var(--accent)]', text: 'text-[var(--accent)] dark:text-[var(--dk-accent3)]', badge: 'bg-[var(--accent-bg)] dark:bg-[var(--dk-tint)] text-[var(--accent)] dark:text-[var(--dk-accent3)]' },
   { label: 'Excellent',    min: 4.5, max: 5.0, bar: 'bg-emerald-500',text: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' },
 ] as const;
 

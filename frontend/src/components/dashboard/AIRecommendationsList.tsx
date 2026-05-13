@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 
@@ -17,9 +17,9 @@ interface AIRecommendationsListProps {
 const tagColors: Record<string, string> = {
   'High Impact': 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400',
   'Quick Win': 'bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400',
-  'Operational': 'bg-[#F9ECE8] dark:bg-[var(--dk-tint)] text-[#C0602A] dark:text-[var(--dk-accent3)]',
+  'Operational': 'bg-[var(--accent-bg)] dark:bg-[var(--dk-tint)] text-[var(--accent-2)] dark:text-[var(--dk-accent3)]',
   'Revenue': 'bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400',
-  'Operations': 'bg-[#F9ECE8] dark:bg-[var(--dk-tint)] text-[#C0602A] dark:text-[var(--dk-accent3)]',
+  'Operations': 'bg-[var(--accent-bg)] dark:bg-[var(--dk-tint)] text-[var(--accent-2)] dark:text-[var(--dk-accent3)]',
 };
 
 function RecommendationCard({ rec, index }: { rec: Recommendation; index: number }) {
@@ -34,7 +34,7 @@ function RecommendationCard({ rec, index }: { rec: Recommendation; index: number
         aria-expanded={open}
       >
         {/* Number bubble */}
-        <span className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#F9ECE8] dark:bg-[var(--dk-tint)] text-[#9B2335] dark:text-[var(--dk-accent3)] text-[10px] font-bold flex items-center justify-center">
+        <span className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[var(--accent-bg)] dark:bg-[var(--dk-tint)] text-[var(--accent)] dark:text-[var(--dk-accent3)] text-[10px] font-bold flex items-center justify-center">
           {index + 1}
         </span>
 
