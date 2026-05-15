@@ -5,10 +5,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from apify_client import ApifyClient
+from apify_client import ApifyClient, ApifyClientAsync
 from apify_client.errors import ApifyApiError
 
 from app.config import Settings
+from app.services.apify_async_io import iterate_dataset_items_locked
 
 
 @dataclass(frozen=True)
@@ -304,6 +305,102 @@ def fetch_reviews_for_source(
             break
 
     logger.info(f"[{source}] Extracted {len(normalized)} reviews from {raw_items_count} items")
+
+    stats = {
+        "raw_items_count": raw_items_count,
+        "normalized_count": normalized_total,
+        "after_since_count": after_since_count,
+        "returned_count": len(normalized[:limit]),
+        "limit": limit,
+    }
+
+    return normalized[:limit], dataset_url, stats
+
+
+async def fetch_reviews_for_source_async(
+    settings: Settings,
+    *,
+    source: str,
+    restaurant_name: str,
+    restaurant_location: str,
+    since: datetime | None = None,
+    tripadvisor_url: str | None = None,
+    yelp_url: str | None = None,
+) -> tuple[list[ReviewNormalized], str | None, dict[str, int]]:
+    """Async Apify review fetch; safe concurrent awaits on one event loop."""
+    if source not in _SUPPORTED_SOURCES:
+        raise ApifyReviewsError(f"Unsupported source: {source}")
+    if not settings.apify_api_key:
+        raise ApifyReviewsError("APIFY_API_KEY is not set")
+
+    actor_id = {
+        "google": settings.apify_google_actor_id,
+        "yelp": settings.apify_yelp_actor_id,
+        "tripadvisor": settings.apify_tripadvisor_actor_id,
+    }[source]
+
+    client = ApifyClientAsync(settings.apify_api_key)
+    run_input = _build_actor_input(
+        settings,
+        source=source,
+        name=restaurant_name,
+        location=restaurant_location,
+        since=since,
+        tripadvisor_url=tripadvisor_url,
+        yelp_url=yelp_url,
+    )
+
+    import logging
+
+    logger = logging.getLogger(__name__)
+    logger.info("[%s] Running actor %s (async) with input: %s", source, actor_id, run_input)
+
+    try:
+        run = await client.actor(actor_id).call(run_input=run_input, wait_secs=settings.apify_wait_secs)
+    except ApifyApiError as e:
+        raise ApifyReviewsError(str(e)) from e
+
+    if run is None or not run.get("defaultDatasetId"):
+        raise ApifyReviewsError("Apify run finished without a default dataset")
+
+    dataset_id = run["defaultDatasetId"]
+    dataset_url = f"https://console.apify.com/storage/datasets/{dataset_id}"
+
+    limit = per_source_review_limit(settings, source)
+    normalized: list[ReviewNormalized] = []
+    seen_keys: set[str] = set()
+
+    raw_items_count = 0
+    normalized_total = 0
+    after_since_count = 0
+
+    async for item in iterate_dataset_items_locked(client, dataset_id):
+        if not isinstance(item, dict):
+            continue
+        raw_items_count += 1
+
+        if raw_items_count == 1:
+            logger.info("[%s] First item keys (async): %s", source, list(item.keys()))
+            logger.info("[%s] First item sample (async): %s", source, str(item)[:500])
+
+        rows = _normalize_from_item(source, item, include_empty=settings.include_empty_reviews)
+        normalized_total += len(rows)
+        for row in rows:
+            if row.review_key in seen_keys:
+                continue
+            if since is not None:
+                dt = _parse_iso_datetime(row.date_iso)
+                if dt is None or dt <= since:
+                    continue
+            after_since_count += 1
+            seen_keys.add(row.review_key)
+            normalized.append(row)
+            if len(normalized) >= limit:
+                break
+        if len(normalized) >= limit:
+            break
+
+    logger.info("[%s] Extracted %s reviews from %s items (async)", source, len(normalized), raw_items_count)
 
     stats = {
         "raw_items_count": raw_items_count,

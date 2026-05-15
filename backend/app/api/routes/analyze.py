@@ -1,29 +1,32 @@
+import asyncio
 import logging
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.api.dependencies import limiter, verify_api_key
 from app.config import get_settings
 from app.schemas import AnalyzeRequest, AnalyzeResponse, ReviewItem
-from app.services.apify_reviews_multi import ApifyReviewsError, fetch_reviews_for_source
+from app.services.apify_reviews_multi import ApifyReviewsError, fetch_reviews_for_source_async
 from app.services.apify_google_reviews import (
     GoogleReviewsError,
-    fetch_google_reviews_detailed,
+    fetch_google_reviews_detailed_async,
 )
 from app.services.insights_stub import stub_insights_from_reviews
 from app.services.llm_service import generate_insights
 from app.services.review_sync_store import create_default_sync_store, reset_all
 from app.services.search_url_resolver import (
     SearchUrlResolverError,
-    resolve_tripadvisor_url_from_search,
-    resolve_yelp_url_from_search,
+    resolve_tripadvisor_url_from_search_async,
+    resolve_yelp_url_from_search_async,
 )
 from app.services.tripadvisor_discovery import (
     TripAdvisorDiscoveryError,
-    discover_tripadvisor_place_url,
+    discover_tripadvisor_place_url_async,
 )
 from app.services.yelp_discovery import YelpDiscoveryError, discover_yelp_business_url
+from app.services.google_places_service import GooglePlacesService
 
 router = APIRouter(prefix="/api/v1", tags=["analyze"])
 
@@ -39,17 +42,12 @@ def _strip_pii(review_context: dict | None) -> dict | None:
     return {k: v for k, v in review_context.items() if k not in _PII_CONTEXT_KEYS}
 
 
-
-
-
 @router.post("/restaurants/analyze", response_model=AnalyzeResponse)
 @limiter.limit("10/minute")
-def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends(verify_api_key)) -> AnalyzeResponse:
-    """Incremental sync across Google + TripAdvisor + Yelp using name + location only.
-
-    URL resolution order (for URL-based sources):
-    - cache -> search resolver -> discovery actor fallback
-    """
+async def analyze_restaurant(
+    request: Request, body: AnalyzeRequest, _: None = Depends(verify_api_key)
+) -> AnalyzeResponse:
+    """Incremental sync across Google + TripAdvisor + Yelp (async parallel Apify, same as /stream)."""
     settings = get_settings()
     if not settings.apify_api_key:
         raise HTTPException(
@@ -67,8 +65,12 @@ def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends
     if _cached_check:
         stub = stub_insights_from_reviews(_cached_check)
         if settings.openai_api_key:
-            _llm = generate_insights(reviews=_cached_check, api_key=settings.openai_api_key,
-                        sentiment=stub.sentiment, sources=stub.sources)
+            _llm = generate_insights(
+                reviews=_cached_check,
+                api_key=settings.openai_api_key,
+                sentiment=stub.sentiment,
+                sources=stub.sources,
+            )
             insights = _llm if _llm is not None else stub
         else:
             insights = stub
@@ -96,246 +98,381 @@ def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends
             new_reviews_count=0,
         )
 
-    all_new_reviews = []
+    all_new_reviews: list = []
     dataset_urls: list[str] = []
-    range_from_values = []
-    range_to_values = []
+    range_from_values: list = []
+    range_to_values: list = []
     total_new = 0
     source_errors: list[str] = []
     source_stats: list[str] = []
 
-    # Resolve TripAdvisor URL (cache -> search -> discovery fallback)
-    resolved_tripadvisor_url = sync_store.get_source_place_link(
-        source="tripadvisor",
-        restaurant_name=body.name,
-        restaurant_location=body.location,
-    )
-    if not resolved_tripadvisor_url:
-        # Use address for better search accuracy if available
-        search_name = f"{body.name} {body.address}" if body.address else body.name
-        try:
-            t_search_url = resolve_tripadvisor_url_from_search(search_name.strip(), body.location.strip())
-        except SearchUrlResolverError as e:
-            source_errors.append(f"tripadvisor-search: {str(e)}")
-            t_search_url = None
+    search_display_name = (
+        f"{body.name} {body.address}".strip() if body.address else body.name
+    ).strip()
 
-        if t_search_url:
-            resolved_tripadvisor_url = t_search_url
-            sync_store.upsert_source_place_link(
-                source="tripadvisor",
+    async def fetch_google_task():
+        """Resolve Google Maps target: explicit place_id > Autocomplete (if no id) > URL > cache."""
+        cached_google_url: str | None = None
+        autocomplete_pid: str | None = None
+
+        if body.google_place_id:
+            cached_google_url = f"https://www.google.com/maps/place/?q=place_id:{body.google_place_id}"
+        elif settings.google_api_key:
+            try:
+
+                def _first_place_id() -> str | None:
+                    svc = GooglePlacesService()
+                    return svc.resolve_first_place_id_for_restaurant(
+                        restaurant_name=body.name.strip(),
+                        restaurant_location=body.location.strip(),
+                    )
+
+                autocomplete_pid = await asyncio.to_thread(_first_place_id)
+            except ValueError:
+                logger.warning(
+                    "GOOGLE_API_KEY not configured; skipping Places autocomplete for REST analyze"
+                )
+            except Exception as e:
+                logger.warning("Places autocomplete failed (ignored): %s", e)
+
+            if autocomplete_pid:
+                cached_google_url = (
+                    f"https://www.google.com/maps/place/?q=place_id:{autocomplete_pid}"
+                )
+                logger.info(
+                    "REST analyze: using first Autocomplete place_id (%s…)",
+                    autocomplete_pid[:12],
+                )
+
+        if not cached_google_url and body.google_place_url:
+            cached_google_url = body.google_place_url
+
+        if not cached_google_url:
+            cached_google_url = sync_store.get_source_place_link(
+                source="google",
                 restaurant_name=body.name,
                 restaurant_location=body.location,
-                source_url=t_search_url,
             )
-        else:
-            try:
-                t_url, t_place_id, t_dataset = discover_tripadvisor_place_url(
-                    settings,
-                    restaurant_name=body.name.strip(),
-                    restaurant_location=body.location.strip(),
-                )
-                if t_dataset:
-                    dataset_urls.append(f"tripadvisor-discovery: {t_dataset}")
-                if t_url:
-                    resolved_tripadvisor_url = t_url
-                    sync_store.upsert_source_place_link(
-                        source="tripadvisor",
-                        restaurant_name=body.name,
-                        restaurant_location=body.location,
-                        source_url=t_url,
-                        source_place_id=t_place_id,
-                    )
-                else:
-                    source_errors.append("tripadvisor-discovery: no matching place URL found")
-            except TripAdvisorDiscoveryError as e:
-                source_errors.append(f"tripadvisor-discovery: {str(e)}")
 
-    # Resolve Yelp URL (cache -> search -> discovery fallback)
-    resolved_yelp_url = None
-    if settings.apify_yelp_enabled:
-        resolved_yelp_url = sync_store.get_source_place_link(
+        had_place_hint = bool(cached_google_url)
+        result = await fetch_google_reviews_detailed_async(
+            settings,
+            restaurant_name=body.name.strip(),
+            restaurant_location=body.location.strip(),
+            since=None,
+            cached_place_url=cached_google_url,
+        )
+        return (had_place_hint,) + result
+
+    async def resolve_tripadvisor_url_task():
+        resolved_url = sync_store.get_source_place_link(
+            source="tripadvisor",
+            restaurant_name=body.name,
+            restaurant_location=body.location,
+        )
+
+        if resolved_url:
+            return resolved_url, None
+
+        try:
+            t_search_url = await resolve_tripadvisor_url_from_search_async(
+                search_display_name,
+                body.location.strip(),
+                settings,
+            )
+            if t_search_url:
+                sync_store.upsert_source_place_link(
+                    source="tripadvisor",
+                    restaurant_name=body.name,
+                    restaurant_location=body.location,
+                    source_url=t_search_url,
+                )
+                return t_search_url, None
+        except SearchUrlResolverError as e:
+            logger.warning("TripAdvisor search resolver failed: %s", e)
+            source_errors.append(f"tripadvisor-search: {str(e)}")
+
+        try:
+            t_url, t_place_id, t_dataset = await discover_tripadvisor_place_url_async(
+                settings,
+                restaurant_name=body.name.strip(),
+                restaurant_location=body.location.strip(),
+            )
+            if t_dataset:
+                dataset_urls.append(f"tripadvisor-discovery: {t_dataset}")
+            if t_url:
+                sync_store.upsert_source_place_link(
+                    source="tripadvisor",
+                    restaurant_name=body.name,
+                    restaurant_location=body.location,
+                    source_url=t_url,
+                    source_place_id=t_place_id,
+                )
+                return t_url, t_dataset
+        except TripAdvisorDiscoveryError as e:
+            logger.error("TripAdvisor discovery actor failed: %s", e)
+            source_errors.append(f"tripadvisor-discovery: {str(e)}")
+        else:
+            source_errors.append("tripadvisor-discovery: no matching place URL found")
+
+        return None, None
+
+    async def resolve_yelp_url_task():
+        if not settings.apify_yelp_enabled:
+            return None
+
+        resolved_url = sync_store.get_source_place_link(
             source="yelp",
             restaurant_name=body.name,
             restaurant_location=body.location,
         )
-        if not resolved_yelp_url:
-            # Use address for better search accuracy if available
-            search_name = f"{body.name} {body.address}" if body.address else body.name
-            try:
-                y_search_url = resolve_yelp_url_from_search(search_name.strip(), body.location.strip())
-            except SearchUrlResolverError as e:
-                source_errors.append(f"yelp-search: {str(e)}")
-                y_search_url = None
+        if resolved_url:
+            return resolved_url
 
+        try:
+            y_search_url = await resolve_yelp_url_from_search_async(
+                search_display_name,
+                body.location.strip(),
+                settings,
+            )
             if y_search_url and "yelp.com/biz/" in y_search_url.lower():
-                resolved_yelp_url = y_search_url
                 sync_store.upsert_source_place_link(
                     source="yelp",
                     restaurant_name=body.name,
                     restaurant_location=body.location,
                     source_url=y_search_url,
                 )
-            else:
-                try:
-                    y_url, y_place_id, y_dataset = discover_yelp_business_url(
-                        settings,
-                        restaurant_name=body.name.strip(),
-                        restaurant_location=body.location.strip(),
-                    )
-                    if y_dataset:
-                        dataset_urls.append(f"yelp-discovery: {y_dataset}")
-                    if y_url:
-                        resolved_yelp_url = y_url
-                        sync_store.upsert_source_place_link(
-                            source="yelp",
-                            restaurant_name=body.name,
-                            restaurant_location=body.location,
-                            source_url=y_url,
-                            source_place_id=y_place_id,
-                        )
-                    else:
-                        source_errors.append("yelp-discovery: no matching business URL found")
-                except YelpDiscoveryError as e:
-                    source_errors.append(f"yelp-discovery: {str(e)}")
+                return y_search_url
+        except SearchUrlResolverError as e:
+            logger.warning("Yelp search resolver failed: %s", e)
+            source_errors.append(f"yelp-search: {str(e)}")
+
+        try:
+            y_url, y_place_id, y_dataset = await asyncio.to_thread(
+                discover_yelp_business_url,
+                settings,
+                restaurant_name=body.name.strip(),
+                restaurant_location=body.location.strip(),
+            )
+            if y_dataset:
+                dataset_urls.append(f"yelp-discovery: {y_dataset}")
+            if y_url:
+                sync_store.upsert_source_place_link(
+                    source="yelp",
+                    restaurant_name=body.name,
+                    restaurant_location=body.location,
+                    source_url=y_url,
+                    source_place_id=y_place_id,
+                )
+                return y_url
+        except YelpDiscoveryError as e:
+            source_errors.append(f"yelp-discovery: {str(e)}")
+        else:
+            source_errors.append("yelp-discovery: no matching business URL found")
+
+        return None
+
+    async def fetch_tripadvisor_reviews_task(tripadvisor_url: str):
+        return await fetch_reviews_for_source_async(
+            settings,
+            source="tripadvisor",
+            restaurant_name=body.name.strip(),
+            restaurant_location=body.location.strip(),
+            since=None,
+            tripadvisor_url=tripadvisor_url,
+            yelp_url=None,
+        )
+
+    async def fetch_yelp_reviews_task(yelp_url: str):
+        return await fetch_reviews_for_source_async(
+            settings,
+            source="yelp",
+            restaurant_name=body.name.strip(),
+            restaurant_location=body.location.strip(),
+            since=None,
+            tripadvisor_url=None,
+            yelp_url=yelp_url,
+        )
+
+    pending_tasks: dict[str, asyncio.Task[Any]] = {}
+    pending_tasks["google_reviews"] = asyncio.create_task(fetch_google_task())
+    pending_tasks["tripadvisor_url"] = asyncio.create_task(resolve_tripadvisor_url_task())
+
+    if settings.apify_yelp_enabled:
+        pending_tasks["yelp_url"] = asyncio.create_task(resolve_yelp_url_task())
     else:
         source_stats.append("yelp(skipped:disabled)")
 
-    # Fetch order: Google (two-stage) -> TripAdvisor -> (Yelp if enabled)
-    for source in ("google", "tripadvisor", "yelp"):
-        if source == "yelp" and not settings.apify_yelp_enabled:
-            continue
+    while pending_tasks:
+        done, _pending = await asyncio.wait(
+            pending_tasks.values(),
+            return_when=asyncio.FIRST_COMPLETED,
+        )
 
-        if source == "yelp" and not resolved_yelp_url:
-            source_stats.append("yelp(skipped:no_resolved_url)")
-            continue
+        for finished in done:
+            task_key: str | None = None
+            for k, t in list(pending_tasks.items()):
+                if t == finished:
+                    task_key = k
+                    del pending_tasks[k]
+                    break
 
-        # Google uses two-stage extraction
-        if source == "google":
-            # Prioritize Google Places API data from request body
-            if body.google_place_url:
-                # Use URL directly from Places Autocomplete
-                cached_google_url = body.google_place_url
-            elif body.google_place_id:
-                # Construct URL from place_id
-                cached_google_url = f"https://www.google.com/maps/place/?q=place_id:{body.google_place_id}"
-            else:
-                # Fallback to cached URL from previous runs
-                cached_google_url = sync_store.get_source_place_link(
-                    source="google",
-                    restaurant_name=body.name,
-                    restaurant_location=body.location,
-                )
+            if not task_key:
+                continue
 
             try:
-                google_reviews, google_place_url, google_dataset_urls, google_stats = (
-                    fetch_google_reviews_detailed(
-                        settings,
+                result = finished.result()
+
+                if task_key == "google_reviews":
+                    had_hint, google_reviews, google_place_url, google_dataset_urls, google_stats = result
+
+                    if google_place_url and not had_hint:
+                        sync_store.upsert_source_place_link(
+                            source="google",
+                            restaurant_name=body.name,
+                            restaurant_location=body.location,
+                            source_url=google_place_url,
+                            source_place_id=google_stats.get("place_id"),
+                        )
+
+                    inserted, window = sync_store.upsert_reviews_and_state(
+                        source="google",
                         restaurant_name=body.name.strip(),
                         restaurant_location=body.location.strip(),
-                        since=None,
-                        cached_place_url=cached_google_url,
-                    )
-                )
-
-                # Cache the place URL
-                if google_place_url and not cached_google_url:
-                    sync_store.upsert_source_place_link(
-                        source="google",
-                        restaurant_name=body.name,
-                        restaurant_location=body.location,
-                        source_url=google_place_url,
-                        source_place_id=google_stats.get("place_id"),
+                        rows=[
+                            {
+                                "review_key": r.review_key,
+                                "review_date_iso": r.date_iso,
+                                "text": r.text,
+                                "rating": r.rating,
+                                "review_context": _strip_pii(r.review_context),
+                                "review_detailed_rating": r.review_detailed_rating,
+                            }
+                            for r in google_reviews
+                        ],
                     )
 
-                inserted, window = sync_store.upsert_reviews_and_state(
-                    source="google",
-                    restaurant_name=body.name.strip(),
-                    restaurant_location=body.location.strip(),
-                    rows=[
-                        {
-                            "review_key": r.review_key,
-                            "review_date_iso": r.date_iso,
-                            "text": r.text,
-                            "rating": r.rating,
-                            "review_context": _strip_pii(r.review_context),
-                            "review_detailed_rating": r.review_detailed_rating,
-                        }
-                        for r in google_reviews
-                    ],
-                )
+                    source_stats.append(
+                        f"google(returned={google_stats['returned_count']},"
+                        f"inserted={inserted},limit={google_stats['limit']})"
+                    )
 
-                source_stats.append(
-                    f"google(returned={google_stats['returned_count']},"
-                    f"inserted={inserted},limit={google_stats['limit']})"
-                )
+                    if inserted > 0:
+                        all_new_reviews.extend(google_reviews[:inserted])
+                        total_new += inserted
 
-                if inserted > 0:
-                    all_new_reviews.extend(google_reviews[:inserted])
-                    total_new += inserted
+                    if google_dataset_urls:
+                        dataset_urls.append(f"google: {google_dataset_urls}")
+                    if window.since is not None:
+                        range_from_values.append(window.since)
+                    if window.until is not None:
+                        range_to_values.append(window.until)
 
-                if google_dataset_urls:
-                    dataset_urls.append(f"google: {google_dataset_urls}")
-                if window.since is not None:
-                    range_from_values.append(window.since)
-                if window.until is not None:
-                    range_to_values.append(window.until)
+                elif task_key == "tripadvisor_url":
+                    tripadvisor_url, _t_ds = result
+
+                    if tripadvisor_url:
+                        pending_tasks["tripadvisor_reviews"] = asyncio.create_task(
+                            fetch_tripadvisor_reviews_task(tripadvisor_url)
+                        )
+                    else:
+                        source_stats.append("tripadvisor(skipped:no_resolved_url)")
+
+                elif task_key == "yelp_url":
+                    yelp_url = result
+
+                    if yelp_url:
+                        pending_tasks["yelp_reviews"] = asyncio.create_task(
+                            fetch_yelp_reviews_task(yelp_url)
+                        )
+                    else:
+                        source_stats.append("yelp(skipped:no_resolved_url)")
+
+                elif task_key == "tripadvisor_reviews":
+                    reviews, dataset_url, stats = result
+
+                    inserted, window = sync_store.upsert_reviews_and_state(
+                        source="tripadvisor",
+                        restaurant_name=body.name.strip(),
+                        restaurant_location=body.location.strip(),
+                        rows=[
+                            {
+                                "review_key": r.review_key,
+                                "review_date_iso": r.date_iso,
+                                "text": r.text,
+                                "rating": r.rating,
+                            }
+                            for r in reviews
+                        ],
+                    )
+
+                    source_stats.append(
+                        f"tripadvisor(raw={stats['raw_items_count']},norm={stats['normalized_count']},"
+                        f"after_since={stats['after_since_count']},returned={stats['returned_count']},"
+                        f"inserted={inserted},limit={stats['limit']})"
+                    )
+
+                    if inserted > 0:
+                        all_new_reviews.extend(reviews[:inserted])
+                        total_new += inserted
+
+                    if dataset_url:
+                        dataset_urls.append(f"tripadvisor: {dataset_url}")
+                    if window.since is not None:
+                        range_from_values.append(window.since)
+                    if window.until is not None:
+                        range_to_values.append(window.until)
+
+                elif task_key == "yelp_reviews":
+                    reviews, dataset_url, stats = result
+
+                    inserted, window = sync_store.upsert_reviews_and_state(
+                        source="yelp",
+                        restaurant_name=body.name.strip(),
+                        restaurant_location=body.location.strip(),
+                        rows=[
+                            {
+                                "review_key": r.review_key,
+                                "review_date_iso": r.date_iso,
+                                "text": r.text,
+                                "rating": r.rating,
+                            }
+                            for r in reviews
+                        ],
+                    )
+
+                    source_stats.append(
+                        f"yelp(raw={stats['raw_items_count']},norm={stats['normalized_count']},"
+                        f"after_since={stats['after_since_count']},returned={stats['returned_count']},"
+                        f"inserted={inserted},limit={stats['limit']})"
+                    )
+
+                    if inserted > 0:
+                        all_new_reviews.extend(reviews[:inserted])
+                        total_new += inserted
+
+                    if dataset_url:
+                        dataset_urls.append(f"yelp: {dataset_url}")
+                    if window.since is not None:
+                        range_from_values.append(window.since)
+                    if window.until is not None:
+                        range_to_values.append(window.until)
 
             except GoogleReviewsError as e:
                 source_errors.append(f"google: {str(e)}")
-            continue
-
-        # TripAdvisor and Yelp use existing multi-source extraction
-        if source == "tripadvisor" and not resolved_tripadvisor_url:
-            source_stats.append("tripadvisor(skipped:no_resolved_url)")
-            continue
-
-        # Always fetch the latest N reviews (no since filter).
-        # Deduplication in the store via review_key prevents double-counting.
-        try:
-            reviews, dataset_url, stats = fetch_reviews_for_source(
-                settings,
-                source=source,
-                restaurant_name=body.name.strip(),
-                restaurant_location=body.location.strip(),
-                since=None,
-                tripadvisor_url=resolved_tripadvisor_url,
-                yelp_url=resolved_yelp_url,
-            )
-        except ApifyReviewsError as e:
-            source_errors.append(f"{source}: {str(e)}")
-            continue
-
-        inserted, window = sync_store.upsert_reviews_and_state(
-            source=source,
-            restaurant_name=body.name.strip(),
-            restaurant_location=body.location.strip(),
-            rows=[
-                {
-                    "review_key": r.review_key,
-                    "review_date_iso": r.date_iso,
-                    "text": r.text,
-                    "rating": r.rating,
-                }
-                for r in reviews
-            ],
-        )
-
-        source_stats.append(
-            f"{source}(raw={stats['raw_items_count']},norm={stats['normalized_count']},"
-            f"after_since={stats['after_since_count']},returned={stats['returned_count']},"
-            f"inserted={inserted},limit={stats['limit']})"
-        )
-
-        if inserted > 0:
-            all_new_reviews.extend(reviews[:inserted])
-            total_new += inserted
-
-        if dataset_url:
-            dataset_urls.append(f"{source}: {dataset_url}")
-        if window.since is not None:
-            range_from_values.append(window.since)
-        if window.until is not None:
-            range_to_values.append(window.until)
+            except ApifyReviewsError as e:
+                if "tripadvisor" in task_key:
+                    source_errors.append(f"tripadvisor: {str(e)}")
+                elif "yelp" in task_key:
+                    source_errors.append(f"yelp: {str(e)}")
+            except Exception as e:
+                logger.exception("Unexpected error in async analyze task %s", task_key)
+                if "google" in task_key:
+                    source_errors.append(f"google: {str(e)}")
+                elif "tripadvisor" in task_key:
+                    source_errors.append(f"tripadvisor: {str(e)}")
+                elif "yelp" in task_key:
+                    source_errors.append(f"yelp: {str(e)}")
 
     # Load ALL stored reviews (not just new ones) for the response
     all_stored_reviews = sync_store.get_all_reviews(
@@ -343,10 +480,8 @@ def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends
         restaurant_location=body.location.strip(),
     )
 
-    # Compute sentiment + source counts from all stored reviews (stub is fast/free)
     stub = stub_insights_from_reviews(all_stored_reviews)
 
-    # Try LLM insights; fall back to stub if key missing or call fails
     if settings.openai_api_key and all_stored_reviews:
         llm_result = generate_insights(
             reviews=all_stored_reviews,
@@ -358,7 +493,6 @@ def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends
     else:
         insights = stub
 
-    # Filter reviews based on include_empty_reviews setting
     if settings.include_empty_reviews:
         review_items = [
             ReviewItem(
@@ -401,7 +535,10 @@ def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends
     if source_stats:
         detail = detail + " Stats: " + " | ".join(source_stats)
     if source_errors:
-        logger.warning("Source errors during analysis", extra={"errors": source_errors, "restaurant": body.name})
+        logger.warning(
+            "Source errors during analysis",
+            extra={"errors": source_errors, "restaurant": body.name},
+        )
         detail = detail + " Some sources were unavailable."
 
     return AnalyzeResponse(

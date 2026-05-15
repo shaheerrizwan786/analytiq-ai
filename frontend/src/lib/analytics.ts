@@ -14,7 +14,7 @@ export type ReviewInput = {
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 /** Normalise any date string to YYYY-MM-DD, returns null if unparseable. */
-function toDateKey(iso: string | null): string | null {
+export function toDateKey(iso: string | null): string | null {
   if (!iso) return null;
   try {
     const d = new Date(iso);
@@ -287,6 +287,13 @@ export function buildWeeklyTimeSeries(reviews: ReviewInput[]): WeeklyPoint[] {
         score: Math.round(clamp(rawScore, 0, 100)),
       };
     });
+}
+
+/** Add calendar days to a YYYY-MM-DD string; returns another YYYY-MM-DD (UTC noon math, stable for keys). */
+export function addCalendarDays(ymd: string, deltaDays: number): string {
+  const d = new Date(ymd + 'T12:00:00.000Z');
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
 }
 
 /** Filter reviews to those within the last N days from a reference date. */
