@@ -315,6 +315,64 @@ function AnalyzeForm({
 
   const canSubmit = name.trim().length > 0 && location.trim().length > 0;
 
+  function isDemoRestaurant(n: string, l: string): boolean {
+    const normalised = n.toLowerCase().replace(/^the\s+/, '').trim();
+    return normalised.includes('meridian kitchen') && l.toLowerCase().includes('clayton');
+  }
+
+  function delay(ms: number) {
+    return new Promise<void>((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function runDemoAnimation(): Promise<void> {
+    // Kick off all three sources "started" immediately
+    setCurrentStage('google');
+    setStageStatuses({ google: 'started', tripadvisor: 'started', yelp: 'started', insights: 'pending', complete: 'pending' });
+    setStageMessages({
+      google: 'Fetching Google reviews...',
+      tripadvisor: 'Fetching TripAdvisor reviews...',
+      yelp: 'Searching for Yelp URL...',
+      insights: '',
+      complete: '',
+    });
+
+    await delay(2800);
+
+    // Google completes first
+    setStageStatuses((prev) => ({ ...prev, google: 'completed' }));
+    setStageMessages((prev) => ({ ...prev, google: 'Found 38 Google reviews' }));
+
+    await delay(1400);
+
+    // TripAdvisor completes
+    setStageStatuses((prev) => ({ ...prev, tripadvisor: 'completed' }));
+    setStageMessages((prev) => ({ ...prev, tripadvisor: 'Found 9 TripAdvisor reviews' }));
+
+    await delay(900);
+
+    // Yelp completes
+    setStageStatuses((prev) => ({ ...prev, yelp: 'completed' }));
+    setStageMessages((prev) => ({ ...prev, yelp: 'Found 3 Yelp reviews' }));
+
+    await delay(600);
+
+    // Insights kicks off
+    setCurrentStage('insights');
+    setStageStatuses((prev) => ({ ...prev, insights: 'started' }));
+    setStageMessages((prev) => ({ ...prev, insights: 'Generating AI insights...' }));
+
+    await delay(2200);
+
+    // Insights completes
+    setStageStatuses((prev) => ({ ...prev, insights: 'completed' }));
+    setStageMessages((prev) => ({ ...prev, insights: 'Insights ready' }));
+
+    await delay(500);
+
+    setCurrentStage('complete');
+    setStageStatuses((prev) => ({ ...prev, complete: 'completed' }));
+  }
+
   async function handleSubmit() {
     if (!canSubmit) return;
     setIsLoading(true);
@@ -323,6 +381,13 @@ function AnalyzeForm({
     setStageStatuses({ google: 'pending', tripadvisor: 'pending', yelp: 'pending', insights: 'pending', complete: 'pending' });
     setStageMessages({ google: '', tripadvisor: '', yelp: '', insights: '', complete: '' });
     try {
+      if (isDemoRestaurant(name.trim(), location.trim())) {
+        await runDemoAnimation();
+        const email = getSession();
+        if (email) saveRestaurant(email, name.trim(), location.trim());
+        onDone(demoDashboardData);
+        return;
+      }
       const res = await analyzeRestaurantStream(
         name.trim(),
         location.trim(),
