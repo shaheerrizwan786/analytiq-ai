@@ -5,7 +5,6 @@ import {
   getFontSize, setFontSize, type FontSize,
   getHighContrast, setHighContrast,
   getReduceMotion, setReduceMotion,
-  getDemoMode, setDemoMode,
 } from '@/lib/a11y';
 
 // ── Reusable toggle row ───────────────────────────────────────────────────────
@@ -53,14 +52,12 @@ export default function AccessibilityPanel({ onClose }: { onClose: () => void })
   const [fontSize, setFontSizeState] = useState<FontSize>('normal');
   const [highContrast, setHighContrastState] = useState(false);
   const [reduceMotion, setReduceMotionState] = useState(false);
-  const [demoMode, setDemoModeState] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setFontSizeState(getFontSize());
     setHighContrastState(getHighContrast());
     setReduceMotionState(getReduceMotion());
-    setDemoModeState(getDemoMode());
   }, []);
 
   const handleClose = useCallback(onClose, [onClose]);
@@ -131,21 +128,7 @@ export default function AccessibilityPanel({ onClose }: { onClose: () => void })
         />
       </div>
 
-      {/* Demo mode — separate section */}
-      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/5">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-            Demo
-          </span>
-          <div className="flex-1 h-px bg-gray-100 dark:bg-white/5" />
-        </div>
-        <ToggleRow
-          label="Demo mode"
-          description="Larger text &amp; letter-spacing for screen recording"
-          value={demoMode}
-          onChange={(v) => { setDemoMode(v); setDemoModeState(v); }}
-        />
-      </div>
+
     </div>
   );
 }

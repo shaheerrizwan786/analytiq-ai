@@ -178,10 +178,4 @@ html[data-motion="reduced"] *::after {
   scroll-behavior: auto !important;
 }
 
-/* Demo mode — larger text + slightly heavier weight for screen recording */
-html[data-demo="on"] {
-  font-size: 115%;
-}
-html[data-demo="on"] body {
-  letter-spacing: 0.01em;
-}
+

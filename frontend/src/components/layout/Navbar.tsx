@@ -46,7 +46,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="w-full border-b border-gray-200/70 dark:border-[var(--dk-border)] bg-white/90 dark:bg-[var(--dk-bg)]/95 backdrop-blur-sm transition-colors">
+      <header className="relative z-20 w-full border-b border-gray-200/70 dark:border-[var(--dk-border)] bg-white/90 dark:bg-[var(--dk-bg)]/95 backdrop-blur-sm transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           {/* Logo mark + wordmark */}
           <div className="flex items-center gap-2">
