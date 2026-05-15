@@ -80,8 +80,8 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-3 relative">
-            {/* Palette variant toggle — two coloured dots */}
-            <div className="flex items-center gap-1.5" title="Switch colour palette">
+            {/* Palette variant toggle — two coloured dots (hidden on mobile to save space) */}
+            <div className="hidden sm:flex items-center gap-1.5" title="Switch colour palette">
               <button
                 onClick={() => handleVariantToggle('warm')}
                 aria-label="Warm palette"
@@ -99,7 +99,7 @@ export default function Navbar() {
             <button
               onClick={handleThemeToggle}
               aria-label="Toggle dark mode"
-              className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               {theme === 'dark' ? (
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -119,7 +119,7 @@ export default function Navbar() {
               onClick={() => setShowA11y((p) => !p)}
               aria-label="Open accessibility settings"
               aria-expanded={showA11y}
-              className={`p-1.5 rounded-lg transition-colors ${showA11y ? 'bg-gray-100 dark:bg-[var(--dk-tint)] text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-[var(--dk-tint)] hover:text-gray-600 dark:hover:text-gray-300'}`}
+              className={`p-2 rounded-lg transition-colors ${showA11y ? 'bg-gray-100 dark:bg-[var(--dk-tint)] text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-[var(--dk-tint)] hover:text-gray-600 dark:hover:text-gray-300'}`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="3"/>
