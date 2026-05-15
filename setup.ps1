@@ -17,7 +17,7 @@ $Root = $PSScriptRoot
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  Analytiq AI — Project Setup (Windows)    " -ForegroundColor Cyan
+Write-Host "  Analytiq AI - Project Setup (Windows)    " -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 
 # ── 1. Python version check ───────────────────────────────────────────────────
@@ -80,7 +80,7 @@ if ($envContent -match "INTERNAL_API_KEY=\s*$" -or $envContent -match "INTERNAL_
 # Warn about blank API keys (don't print values)
 foreach ($key in @("APIFY_API_KEY", "OPENAI_API_KEY", "GOOGLE_API_KEY")) {
     if ($envContent -match "(?m)^$key=\s*$") {
-        Write-Warn "$key is not set in .env.local — some features will be disabled"
+        Write-Warn "$key is not set in .env.local - some features will be disabled"
     }
 }
 

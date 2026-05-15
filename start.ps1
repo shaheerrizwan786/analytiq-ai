@@ -18,7 +18,7 @@ $Root = $PSScriptRoot
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  Analytiq AI — Start Servers              " -ForegroundColor Cyan
+Write-Host "  Analytiq AI - Start Servers              " -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 
 # ── Pre-flight checks ─────────────────────────────────────────────────────────
@@ -50,13 +50,13 @@ Write-OK "Frontend node_modules present"
 $envContent = Get-Content "$Root\.env.local" -Raw
 foreach ($key in @("APIFY_API_KEY", "OPENAI_API_KEY")) {
     if ($envContent -match "(?m)^$key=\s*$") {
-        Write-Warn "$key is empty — some features will not work"
+        Write-Warn "$key is empty - some features will not work"
     }
 }
 
 # Warn if INTERNAL_API_KEY is missing (backend still works but endpoints are unprotected)
 if ($envContent -match "(?m)^INTERNAL_API_KEY=\s*$") {
-    Write-Warn "INTERNAL_API_KEY is not set — API endpoints are unprotected. Run .\setup.ps1 to generate one."
+    Write-Warn "INTERNAL_API_KEY is not set - API endpoints are unprotected. Run .\setup.ps1 to generate one."
 }
 
 # ── Launch backend ────────────────────────────────────────────────────────────

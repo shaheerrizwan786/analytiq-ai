@@ -249,14 +249,20 @@ function ActiveChat({
   const [title, setTitle] = useState(conversation.title);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isMounted = useRef(false);
 
   useEffect(() => {
     if (!isMounted.current) { isMounted.current = true; return; }
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages, loading]);
+
+  useEffect(() => {
+    inputRef.current?.focus({ preventScroll: true });
+  }, []);
 
   const send = useCallback(async (text: string) => {
     const trimmed = text.trim();
@@ -308,7 +314,7 @@ function ActiveChat({
     } finally {
       setLoading(false);
       onNewMessage();
-      inputRef.current?.focus();
+      inputRef.current?.focus({ preventScroll: true });
     }
   }, [loading, messages, conversation.id, restaurantName, location, topIssues, recommendations, onNewMessage]);
 
@@ -337,7 +343,7 @@ function ActiveChat({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && (
           <div className="space-y-3">
             <p className="text-xs text-gray-400 dark:text-gray-500 text-center">Suggested questions</p>
@@ -390,7 +396,6 @@ function ActiveChat({
           </div>
         )}
 
-        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
@@ -406,7 +411,6 @@ function ActiveChat({
             className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none max-h-32 min-h-[1.5rem] py-1"
             style={{ lineHeight: '1.5rem' }}
             disabled={loading}
-            autoFocus
           />
           <button
             onClick={() => send(input)}

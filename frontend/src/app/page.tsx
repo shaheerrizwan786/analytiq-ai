@@ -8,12 +8,12 @@ import RestaurantAutocomplete from '@/components/ui/RestaurantAutocomplete';
 import AppShell from '@/components/layout/AppShell';
 import AuthModal from '@/components/auth/AuthModal';
 import DashboardView, { DashboardData } from '@/components/dashboard/DashboardView';
-import AnalysisProgressBar, { ProgressStage, StageStatus } from '@/components/ui/AnalysisProgressBar';
-import { analyzeRestaurantStream, AnalyzeResponse, ProgressUpdate } from '@/lib/api';
+import { analyzeRestaurantStream, AnalyzeResponse } from '@/lib/api';
+import type { ProgressStage, StageStatus } from '@/components/ui/AnalysisProgressBar';
+import AnalysisProgressBar from '@/components/ui/AnalysisProgressBar';
 import { getSession, getSavedRestaurant, saveRestaurant } from '@/lib/auth';
 import { useAppMode } from '@/lib/modeContext';
 import { demoDashboardData } from '@/lib/demoData';
-import { toggleTheme, getTheme, type Theme } from '@/lib/theme';
 
 function mapToUi(api: AnalyzeResponse, name: string, location: string): DashboardData {
   const insights = api.insights ?? {};
@@ -137,15 +137,15 @@ function LogoMark({ size = 36 }: { size?: number }) {
     >
       <defs>
         <linearGradient id="landing-logo-grad" x1="0" y1="0" x2="28" y2="0" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" style={{ stopColor: 'var(--vt-from)' }} />
-          <stop offset="100%" style={{ stopColor: 'var(--vt-to)' }} />
+          <stop offset="0%" stopColor="#6C35E0" />
+          <stop offset="100%" stopColor="#22D3EE" />
         </linearGradient>
       </defs>
       <rect x="2" y="18" width="4.5" height="7" rx="1.5" fill="url(#landing-logo-grad)" />
       <rect x="8" y="13" width="4.5" height="12" rx="1.5" fill="url(#landing-logo-grad)" />
       <rect x="14" y="8" width="4.5" height="17" rx="1.5" fill="url(#landing-logo-grad)" />
       <rect x="20" y="3" width="4.5" height="22" rx="1.5" fill="url(#landing-logo-grad)" />
-      <circle cx="22.25" cy="1.5" r="1.5" fill="var(--vt-spark)" />
+      <circle cx="22.25" cy="1.5" r="1.5" fill="#F97316" />
     </svg>
   );
 }
@@ -164,18 +164,11 @@ function LandingPage({
 }) {
   const [showAuth, setShowAuth] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [theme, setThemeState] = useState<Theme>('dark');
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 60);
-    setThemeState(getTheme());
     return () => clearTimeout(t);
   }, []);
-
-  function handleThemeToggle() {
-    const next = toggleTheme();
-    setThemeState(next);
-  }
 
   function handleAuthSuccess(email: string) {
     setShowAuth(false);
@@ -183,12 +176,12 @@ function LandingPage({
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden flex flex-col" style={{ background: 'var(--vt-bg)' }}>
+    <div className="relative min-h-screen bg-[#0C0C18] overflow-hidden flex flex-col">
       {/* Animated background orbs */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="animate-float-blob absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full blur-3xl" style={{ backgroundColor: 'var(--vt-orb1)' }} />
-        <div className="animate-float-blob-delay absolute -bottom-48 -right-48 w-[500px] h-[500px] rounded-full blur-3xl" style={{ backgroundColor: 'var(--vt-orb2)' }} />
-        <div className="animate-float-blob absolute top-1/3 right-1/4 w-72 h-72 rounded-full blur-3xl" style={{ backgroundColor: 'var(--vt-orb3)' }} />
+        <div className="animate-float-blob absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full bg-violet-600/20 blur-3xl" />
+        <div className="animate-float-blob-delay absolute -bottom-48 -right-48 w-[500px] h-[500px] rounded-full bg-cyan-500/15 blur-3xl" />
+        <div className="animate-float-blob absolute top-1/3 right-1/4 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl" />
       </div>
 
       {/* Top bar */}
@@ -196,35 +189,16 @@ function LandingPage({
         <div className="flex items-center gap-2.5">
           <LogoMark size={32} />
           <span className="text-base font-semibold tracking-tight">
-            <span className="vt-gradient-text">Analytiq</span>
-            <span className="text-gray-700 dark:text-gray-200"> AI</span>
+            <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">Analytiq</span>
+            <span className="text-gray-200"> AI</span>
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Dark / light toggle */}
-          <button
-            onClick={handleThemeToggle}
-            aria-label="Toggle dark mode"
-            className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-          >
-            {theme === 'dark' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="4"/>
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-              </svg>
-            )}
-          </button>
-          <button
-            onClick={() => setShowAuth(true)}
-            className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
-          >
-            Sign in
-          </button>
-        </div>
+        <button
+          onClick={() => setShowAuth(true)}
+          className="text-sm font-medium text-gray-400 hover:text-gray-100 transition-colors"
+        >
+          Sign in
+        </button>
       </header>
 
       {/* Hero */}
@@ -235,22 +209,22 @@ function LandingPage({
           }`}
         >
           {/* Status badge */}
-          <div className="inline-flex items-center gap-2 mb-8 rounded-full border border-gray-300/60 dark:border-white/10 bg-gray-100/50 dark:bg-white/5 px-4 py-1.5 text-xs text-gray-500 dark:text-gray-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="inline-flex items-center gap-2 mb-8 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-gray-400 backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Real-time review intelligence for restaurants
           </div>
 
           {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white leading-[1.15]">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.15]">
             Turn customer reviews into
             <br />
-            <span className="vt-gradient-text">
+            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">
               your competitive edge
             </span>
           </h1>
 
           {/* Subtext */}
-          <p className="mt-6 text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto leading-relaxed">
+          <p className="mt-6 text-base sm:text-lg text-gray-400 max-w-xl mx-auto leading-relaxed">
             Analytiq aggregates reviews from Google and TripAdvisor &mdash; then surfaces
             exactly what to fix and what to celebrate.
           </p>
@@ -259,81 +233,38 @@ function LandingPage({
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={onDemo}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl btn-vt-cta text-white font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03]"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03] shadow-lg shadow-orange-500/25"
             >
               View live demo
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
             <button
               onClick={onAnalyze}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300/70 dark:border-white/15 bg-transparent dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-100 font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03]"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-gray-100 font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03] backdrop-blur-sm"
             >
               Start analysis
             </button>
           </div>
 
           {/* Social proof */}
-          <p className="mt-10 text-xs text-gray-500 dark:text-gray-600">
+          <p className="mt-10 text-xs text-gray-600">
             Trusted by independent restaurants &middot; No credit card required &middot; Results in under 2 minutes
           </p>
-        </div>
-
-        {/* Decorative restaurant utensils watermark */}
-        <div
-          className="pointer-events-none select-none absolute bottom-0 right-6 sm:right-16"
-          aria-hidden="true"
-          style={{ color: 'var(--vt-from)', opacity: 0.08 }}
-        >
-          <svg width="68" height="170" viewBox="0 0 68 170" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-            {/* Fork */}
-            <line x1="8"  y1="4"  x2="8"  y2="44" />
-            <line x1="18" y1="4"  x2="18" y2="44" />
-            <line x1="28" y1="4"  x2="28" y2="44" />
-            <path d="M8 44 Q18 58 28 44" fill="none" />
-            <line x1="18" y1="58" x2="18" y2="166" />
-            {/* Spoon */}
-            <ellipse cx="55" cy="20" rx="10" ry="17" />
-            <line x1="55" y1="37" x2="55" y2="166" />
-          </svg>
         </div>
       </main>
 
       {/* Feature strip */}
-      <div className="relative z-10 border-t border-gray-200/60 dark:border-white/5 bg-gray-50/40 dark:bg-white/[0.02]">
+      <div className="relative z-10 border-t border-white/5 bg-white/[0.02] backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-6 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
           {[
-            {
-              icon: (
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: 'var(--vt-from)' }}>
-                  <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-                </svg>
-              ),
-              label: 'Sentiment trends',
-              desc: 'Track how guest mood shifts over time',
-            },
-            {
-              icon: (
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: 'var(--vt-mid)' }}>
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                </svg>
-              ),
-              label: 'Strengths spotlight',
-              desc: 'See exactly what keeps guests coming back',
-            },
-            {
-              icon: (
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: 'var(--vt-to)' }}>
-                  <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
-                </svg>
-              ),
-              label: 'Prioritised fixes',
-              desc: 'Know which issues drive the most impact',
-            },
+            { icon: '📊', label: 'Sentiment trends', desc: 'Track how guest mood shifts over time' },
+            { icon: '✅', label: 'Strengths spotlight', desc: 'See exactly what keeps guests coming back' },
+            { icon: '🎯', label: 'Prioritised fixes', desc: 'Know which issues drive the most impact' },
           ].map(({ icon, label, desc }) => (
-            <div key={label} className="space-y-2">
-              <div className="flex justify-center">{icon}</div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-600">{desc}</p>
+            <div key={label} className="space-y-1">
+              <div className="text-xl">{icon}</div>
+              <p className="text-sm font-medium text-gray-300">{label}</p>
+              <p className="text-xs text-gray-600">{desc}</p>
             </div>
           ))}
         </div>
@@ -360,29 +291,15 @@ function AnalyzeForm({
 }) {
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
+  const [placeId, setPlaceId] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [placeDetails, setPlaceDetails] = useState<{
-    place_id: string;
-    name: string;
-    location: string;
-  } | null>(null);
-
-  // Progress tracking
   const [currentStage, setCurrentStage] = useState<ProgressStage>('google');
   const [stageStatuses, setStageStatuses] = useState<Record<ProgressStage, StageStatus>>({
-    google: 'pending',
-    tripadvisor: 'pending',
-    yelp: 'pending',
-    insights: 'pending',
-    complete: 'pending',
+    google: 'pending', tripadvisor: 'pending', yelp: 'pending', insights: 'pending', complete: 'pending',
   });
   const [stageMessages, setStageMessages] = useState<Record<ProgressStage, string>>({
-    google: '',
-    tripadvisor: '',
-    yelp: '',
-    insights: '',
-    complete: '',
+    google: '', tripadvisor: '', yelp: '', insights: '', complete: '',
   });
 
   useEffect(() => {
@@ -398,81 +315,31 @@ function AnalyzeForm({
 
   const canSubmit = name.trim().length > 0 && location.trim().length > 0;
 
-  // Check if current input matches the selected place details
-  const hasValidPlaceId = placeDetails &&
-    placeDetails.name === name.trim() &&
-    placeDetails.location === location.trim();
-
-  // Process location to keep only last 3 segments (comma-separated)
-  function processLocation(loc: string): string {
-    const segments = loc.split(',').map(s => s.trim()).filter(s => s.length > 0);
-    if (segments.length <= 3) {
-      return loc.trim();
-    }
-    // Keep only last 3 segments
-    return segments.slice(-3).join(', ');
-  }
-
   async function handleSubmit() {
     if (!canSubmit) return;
     setIsLoading(true);
     setError(null);
-
-    // Reset progress
     setCurrentStage('google');
-    setStageStatuses({
-      google: 'pending',
-      tripadvisor: 'pending',
-      yelp: 'pending',
-      insights: 'pending',
-      complete: 'pending',
-    });
-    setStageMessages({
-      google: '',
-      tripadvisor: '',
-      yelp: '',
-      insights: '',
-      complete: '',
-    });
-
-    // Process location to keep only last 3 segments
-    const processedLocation = processLocation(location);
-
+    setStageStatuses({ google: 'pending', tripadvisor: 'pending', yelp: 'pending', insights: 'pending', complete: 'pending' });
+    setStageMessages({ google: '', tripadvisor: '', yelp: '', insights: '', complete: '' });
     try {
       const res = await analyzeRestaurantStream(
         name.trim(),
-        processedLocation,
-        hasValidPlaceId ? {
-          place_id: placeDetails.place_id,
-        } : undefined,
-        (update: ProgressUpdate) => {
-          // Update progress based on SSE events
-          if (update.stage === 'error') {
-            setError(update.message || 'An error occurred');
-            return;
-          }
-
-          setCurrentStage(update.stage);
-
-          // Update stage status
-          setStageStatuses(prev => ({
-            ...prev,
-            [update.stage]: update.status,
-          }));
-
-          // Update stage message
+        location.trim(),
+        placeId ? { place_id: placeId } : undefined,
+        (update) => {
+          if (update.stage === 'error') return;
+          const stage = update.stage as ProgressStage;
+          setCurrentStage(stage);
+          setStageStatuses((prev) => ({ ...prev, [stage]: update.status }));
           if (update.message) {
-            setStageMessages(prev => ({
-              ...prev,
-              [update.stage]: update.message,
-            }));
+            setStageMessages((prev) => ({ ...prev, [stage]: update.message! }));
           }
-        }
+        },
       );
-
-      const uiData = mapToUi(res, name.trim(), processedLocation);
+      const uiData = mapToUi(res, name.trim(), location.trim());
       const email = getSession();
-      if (email) saveRestaurant(email, name.trim(), processedLocation);
+      if (email) saveRestaurant(email, name.trim(), location.trim());
       onDone(uiData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -481,29 +348,12 @@ function AnalyzeForm({
     }
   }
 
-  // Handle manual input changes - clear place_id if user modifies the input
-  function handleNameChange(value: string) {
-    setName(value);
-    // Clear place details if user manually changes the name
-    if (placeDetails && value.trim() !== placeDetails.name) {
-      setPlaceDetails(null);
-    }
-  }
-
-  function handleLocationChange(value: string) {
-    setLocation(value);
-    // Clear place details if user manually changes the location
-    if (placeDetails && value.trim() !== placeDetails.location) {
-      setPlaceDetails(null);
-    }
-  }
-
   return (
     <AppShell>
       <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="animate-float-blob absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'var(--vt-orb1)' }} />
-          <div className="animate-float-blob-delay absolute -bottom-32 -right-32 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: 'var(--vt-orb2)' }} />
+          <div className="animate-float-blob absolute -top-32 -left-32 w-96 h-96 rounded-full bg-violet-500/20 dark:bg-violet-600/15 blur-3xl" />
+          <div className="animate-float-blob-delay absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-cyan-400/20 dark:bg-cyan-500/10 blur-3xl" />
         </div>
 
         <div className="relative z-10 w-full max-w-md">
@@ -516,91 +366,79 @@ function AnalyzeForm({
           </button>
 
           <div className="flex justify-center mb-6">
-            <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-[var(--dk-card)]/80 backdrop-blur-sm border border-gray-100 dark:border-[var(--dk-border)] rounded-full px-3 py-1.5">
+            <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-[#13131F]/80 backdrop-blur-sm border border-gray-100 dark:border-[#1E1E2E] rounded-full px-3 py-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Analysing reviews from Google &middot; TripAdvisor
             </div>
           </div>
 
           <Card padding="lg" className="shadow-xl dark:shadow-violet-950/20">
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold vt-gradient-text leading-tight">
-                Know what to fix.<br />Before guests leave.
-              </h1>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Enter your restaurant to get AI-powered insights from customer reviews in seconds.
-              </p>
-            </div>
-
-            {error && (
-              <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-900 px-4 py-3 text-sm text-red-600 dark:text-red-400">
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <RestaurantAutocomplete
-                label="Restaurant Name"
-                placeholder="e.g. Boost Juice"
-                value={name}
-                onChange={handleNameChange}
-                contextQuery={location}
-                dropdownDirection="up"
-                onPlaceSelect={(details) => {
-                  setName(details.name);
-                  setLocation(details.formatted_address);
-                  setPlaceDetails({
-                    place_id: details.place_id,
-                    name: details.name,
-                    location: details.formatted_address,
-                  });
-                }}
-                isDisabled={isLoading}
-              />
-              <RestaurantAutocomplete
-                label="Location / Address"
-                placeholder="e.g. Monash Clayton"
-                value={location}
-                onChange={handleLocationChange}
-                contextQuery={name}
-                onPlaceSelect={(details) => {
-                  setName(details.name);
-                  setLocation(details.formatted_address);
-                  setPlaceDetails({
-                    place_id: details.place_id,
-                    name: details.name,
-                    location: details.formatted_address,
-                  });
-                }}
-                isDisabled={isLoading}
-              />
-
-              {/* Progress bar - shown when loading */}
-              {isLoading && (
-                <div className="pt-4 pb-2">
-                  <AnalysisProgressBar
-                    currentStage={currentStage}
-                    stageStatuses={stageStatuses}
-                    stageMessages={stageMessages}
-                  />
+            {isLoading ? (
+              <div className="space-y-4">
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Fetching reviews…</h2>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">This usually takes 1–2 minutes.</p>
                 </div>
-              )}
-
-              <div className="pt-2">
-                <Button onClick={handleSubmit} isDisabled={!canSubmit} isLoading={isLoading} size="lg" fullWidth>
-                  Connect &amp; Analyse
-                </Button>
-                {onDemo && (
-                  <button
-                    type="button"
-                    onClick={onDemo}
-                    className="mt-3 w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-violet-500 dark:hover:text-violet-400 transition-colors"
-                  >
-                    Or try with demo data →
-                  </button>
-                )}
+                <AnalysisProgressBar
+                  currentStage={currentStage}
+                  stageStatuses={stageStatuses}
+                  stageMessages={stageMessages}
+                />
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="mb-8">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-cyan-500 bg-clip-text text-transparent leading-tight">
+                    Know what to fix.<br />Before guests leave.
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Enter your restaurant to get AI-powered insights from customer reviews in seconds.
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-900 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                    {error}
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <RestaurantAutocomplete
+                    label="Restaurant Name"
+                    placeholder="e.g. The Meridian Kitchen"
+                    value={name}
+                    onChange={(val) => { setName(val); setPlaceId(undefined); }}
+                    onPlaceSelect={(details) => {
+                      setName(details.name);
+                      if (details.formatted_address) setLocation(details.formatted_address);
+                      setPlaceId(details.place_id);
+                    }}
+                    isDisabled={isLoading}
+                  />
+                  <Input
+                    label="Location"
+                    placeholder="e.g. Clayton, VIC"
+                    value={location}
+                    onChange={setLocation}
+                    isDisabled={isLoading}
+                  />
+                  <div className="pt-2">
+                    <Button onClick={handleSubmit} isDisabled={!canSubmit} isLoading={isLoading} size="lg" fullWidth>
+                      Connect &amp; Analyse
+                    </Button>
+                    {onDemo && (
+                      <button
+                        type="button"
+                        onClick={onDemo}
+                        className="mt-3 w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-violet-500 dark:hover:text-violet-400 transition-colors"
+                      >
+                        Or try with demo data →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </Card>
         </div>
       </div>

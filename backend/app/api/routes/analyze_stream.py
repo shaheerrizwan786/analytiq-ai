@@ -16,6 +16,7 @@ from app.services.apify_google_reviews import (
     fetch_google_reviews_detailed,
 )
 from app.services.insights_stub import stub_insights_from_reviews
+from app.services.llm_service import generate_insights
 from app.services.review_sync_store import create_default_sync_store
 from app.services.search_url_resolver import (
     SearchUrlResolverError,
@@ -565,6 +566,17 @@ async def analyze_restaurant_stream(
         restaurant_location=location.strip(),
     )
     insights = stub_insights_from_reviews(all_stored_reviews, include_empty=settings.include_empty_reviews)
+
+    # Try LLM insights; fall back to stub if key missing or call fails
+    if settings.openai_api_key and all_stored_reviews:
+        llm_result = generate_insights(
+            reviews=all_stored_reviews,
+            api_key=settings.openai_api_key,
+            sentiment=insights.sentiment,
+            sources=insights.sources,
+        )
+        if llm_result is not None:
+            insights = llm_result
 
     # Build final response
     from app.schemas import ReviewItem, AnalyzeResponse

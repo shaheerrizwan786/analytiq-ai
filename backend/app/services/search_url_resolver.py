@@ -206,6 +206,7 @@ def resolve_tripadvisor_url_from_search(
 ) -> str | None:
     """
     Search and find the first TripAdvisor URL that contains 'Restaurant_Review'.
+    Uses Apify Google Search Scraper.
     """
     if settings is None:
         from app.config import get_settings
@@ -262,6 +263,7 @@ def resolve_yelp_url_from_search(
 ) -> str | None:
     """
     Search and find the first Yelp URL that contains '/biz/'.
+    Uses Apify Google Search Scraper.
     """
     if settings is None:
         from app.config import get_settings
