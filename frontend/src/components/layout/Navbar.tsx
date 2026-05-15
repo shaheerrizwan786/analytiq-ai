@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getSession, clearSession } from '@/lib/auth';
 import { toggleTheme, getTheme, getVariant, setVariant, type Theme, type Variant } from '@/lib/theme';
 import AuthModal from '@/components/auth/AuthModal';
+import AccessibilityPanel from '@/components/ui/AccessibilityPanel';
 import { useAppMode } from '@/lib/modeContext';
 
 export default function Navbar() {
@@ -11,6 +12,7 @@ export default function Navbar() {
   const [theme, setThemeState] = useState<Theme>('light');
   const [variant, setVariantState] = useState<Variant>('warm');
   const [showModal, setShowModal] = useState(false);
+  const [showA11y, setShowA11y] = useState(false);
   const { mode, restaurantName } = useAppMode();
 
   useEffect(() => {
@@ -77,7 +79,7 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 relative">
             {/* Palette variant toggle — two coloured dots */}
             <div className="flex items-center gap-1.5" title="Switch colour palette">
               <button
@@ -111,6 +113,22 @@ export default function Navbar() {
               )}
             </button>
             )}
+
+            {/* Accessibility / settings */}
+            <button
+              onClick={() => setShowA11y((p) => !p)}
+              aria-label="Open accessibility settings"
+              aria-expanded={showA11y}
+              className={`p-1.5 rounded-lg transition-colors ${showA11y ? 'bg-gray-100 dark:bg-[var(--dk-tint)] text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-[var(--dk-tint)] hover:text-gray-600 dark:hover:text-gray-300'}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+              </svg>
+            </button>
+
+            {/* Accessibility panel popover */}
+            {showA11y && <AccessibilityPanel onClose={() => setShowA11y(false)} />}
 
             {/* Auth */}
             {session ? (

@@ -144,3 +144,44 @@ body {
 .animate-float-blob-delay {
   animation: float-blob 16s ease-in-out infinite reverse;
 }
+
+/* =====================================================
+   Accessibility & Demo mode
+   ===================================================== */
+
+/* Large text — 112.5% = 18px base */
+html[data-font="large"] {
+  font-size: 112.5%;
+}
+
+/* High contrast */
+html[data-contrast="high"] {
+  --foreground: #000000;
+  --background: #ffffff;
+}
+html.dark[data-contrast="high"] {
+  --foreground: #ffffff;
+  --background: #000000;
+  --dk-bg:   #000000;
+  --dk-card: #0d0d0d;
+  --dk-alt:  #111111;
+  --dk-tint: #1a1a1a;
+}
+
+/* Reduce motion */
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Demo mode — larger text + slightly heavier weight for screen recording */
+html[data-demo="on"] {
+  font-size: 115%;
+}
+html[data-demo="on"] body {
+  letter-spacing: 0.01em;
+}

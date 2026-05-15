@@ -36,7 +36,7 @@ export default function RootLayout({
         {/* Inline script: runs synchronously before first paint to avoid FOUC */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var v=localStorage.getItem('ui:variant');if(v==='cool'){document.documentElement.setAttribute('data-vt','cool');var t=localStorage.getItem('ui:theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}else{document.documentElement.removeAttribute('data-vt');document.documentElement.classList.remove('dark');}}catch(e){}})();`,
+            __html: `(function(){try{var d=document.documentElement;var v=localStorage.getItem('ui:variant');if(v==='cool'){d.setAttribute('data-vt','cool');var t=localStorage.getItem('ui:theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){d.classList.add('dark');}else{d.classList.remove('dark');}}else{d.removeAttribute('data-vt');d.classList.remove('dark');}var f=localStorage.getItem('a11y:font');if(f==='large')d.setAttribute('data-font','large');var c=localStorage.getItem('a11y:contrast');if(c==='true')d.setAttribute('data-contrast','high');var m=localStorage.getItem('a11y:motion');if(m==='true')d.setAttribute('data-motion','reduced');var dm=localStorage.getItem('a11y:demo');if(dm==='true')d.setAttribute('data-demo','on');}catch(e){}})();`,
           }}
         />
       </head>
