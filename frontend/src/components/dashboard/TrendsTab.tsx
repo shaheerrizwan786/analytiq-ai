@@ -13,7 +13,13 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
-import { buildWeeklyTimeSeries, type ReviewInput, type WeeklyPoint } from '@/lib/analytics';
+import {
+  addCalendarDays,
+  buildWeeklyTimeSeries,
+  toDateKey,
+  type ReviewInput,
+  type WeeklyPoint,
+} from '@/lib/analytics';
 
 interface TrendsTabProps {
   reviews: ReviewInput[];
@@ -30,11 +36,19 @@ const periodLabels: Record<Period, string> = {
 function filterByPeriod(reviews: ReviewInput[], period: Period): ReviewInput[] {
   if (period === 'all') return reviews;
   const days = period === '4w' ? 28 : 90;
-  const dates = reviews.map((r) => r.date_iso).filter(Boolean) as string[];
-  if (dates.length === 0) return reviews;
-  const latest = new Date(dates.sort().at(-1)! + 'T23:59:59');
-  const cutoff = new Date(latest.getTime() - days * 24 * 60 * 60 * 1000);
-  return reviews.filter((r) => r.date_iso && new Date(r.date_iso) >= cutoff);
+  /** Same YYYY-MM-DD keys as weekly trends use; avoids TZ mismatch vs `new Date(iso)` vs cutoff. */
+  const keys = reviews.map((r) => toDateKey(r.date_iso)).filter(Boolean) as string[];
+  if (keys.length === 0) return reviews;
+  const maxReviewKey = keys.reduce((a, b) => (a >= b ? a : b));
+  const todayKey = new Date().toISOString().slice(0, 10);
+  /** Cap end at today so a bogus future review date does not push the window past all real reviews. */
+  const endKey = maxReviewKey > todayKey ? todayKey : maxReviewKey;
+  const cutoffKey = addCalendarDays(endKey, -days);
+  return reviews.filter((r) => {
+    const k = toDateKey(r.date_iso);
+    if (!k) return false;
+    return k >= cutoffKey && k <= endKey;
+  });
 }
 
 interface TooltipPayloadEntry {

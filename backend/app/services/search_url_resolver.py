@@ -4,10 +4,11 @@ import logging
 import re
 from difflib import SequenceMatcher
 
-from apify_client import ApifyClient
+from apify_client import ApifyClient, ApifyClientAsync
 from apify_client.errors import ApifyApiError
 
 from app.config import Settings
+from app.services.apify_async_io import iterate_dataset_items_locked
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,55 @@ def _search_with_google(settings: Settings, query: str, max_results: int = 10) -
 
         return organic
 
+    except ApifyApiError as e:
+        raise SearchUrlResolverError(f"Apify API error: {e}") from e
+    except Exception as e:
+        raise SearchUrlResolverError(f"Google Search failed: {e}") from e
+
+
+async def _search_with_google_async(settings: Settings, query: str, max_results: int = 10) -> list[dict]:
+    """Async Google Search Scraper (ApifyClientAsync); safe to run concurrently on one event loop."""
+    if not settings.apify_api_key:
+        raise SearchUrlResolverError("APIFY_API_KEY not configured")
+
+    client = ApifyClientAsync(settings.apify_api_key)
+    run_input = {
+        "queries": query,
+        "maxPagesPerQuery": 1,
+        "resultsPerPage": max_results,
+        "mobileResults": False,
+        "languageCode": "en",
+        "countryCode": "au",
+    }
+    try:
+        logger.info("Starting Google Search actor (async) for query: %s", query)
+        run = await client.actor(settings.apify_google_search_actor_id).call(
+            run_input=run_input,
+            timeout_secs=60,
+        )
+        if not run or run.get("status") != "SUCCEEDED":
+            raise SearchUrlResolverError(
+                f"Google Search actor failed: {run.get('status') if run else 'no run'}"
+            )
+        dataset_id = run.get("defaultDatasetId")
+        if not dataset_id:
+            raise SearchUrlResolverError("No dataset returned from Google Search actor")
+
+        items: list[dict] = []
+        async for item in iterate_dataset_items_locked(client, dataset_id):
+            if isinstance(item, dict):
+                items.append(item)
+        logger.info("Google Search (async) returned %s dataset rows", len(items))
+
+        organic: list[dict] = []
+        for item in items:
+            organic_results = item.get("organicResults", [])
+            for result in organic_results:
+                if not isinstance(result, dict):
+                    continue
+                if result.get("url"):
+                    organic.append(result)
+        return organic
     except ApifyApiError as e:
         raise SearchUrlResolverError(f"Apify API error: {e}") from e
     except Exception as e:
@@ -313,3 +363,85 @@ def resolve_yelp_url_from_search(
     return None
 
 
+async def resolve_tripadvisor_url_from_search_async(
+    restaurant_name: str,
+    restaurant_location: str,
+    settings: Settings | None = None,
+) -> str | None:
+    """Async TripAdvisor URL resolution via Google Search actor."""
+    if settings is None:
+        from app.config import get_settings
+
+        settings = get_settings()
+
+    cleaned_name, cleaned_location = _remove_duplicate_location_from_name(
+        restaurant_name.strip(),
+        restaurant_location.strip(),
+    )
+    query = f"{_sanitise_query_input(cleaned_name)}, {_sanitise_query_input(cleaned_location)} TripAdvisor"
+
+    try:
+        organic_results = await _search_with_google_async(settings, query, max_results=10)
+    except SearchUrlResolverError as e:
+        logger.warning("Google Search (async) failed for TripAdvisor query '%s': %s", query, e)
+        return None
+
+    if not organic_results:
+        logger.warning("TripAdvisor search (async) returned no organicResults for query: %s", query)
+        return None
+
+    for result in organic_results:
+        url = str(result.get("url") or "").strip()
+        title = str(result.get("title") or "")
+        if not url:
+            continue
+        url_lower = url.lower()
+        if "tripadvisor." not in url_lower or "restaurant_review" not in url_lower:
+            continue
+        logger.info("TripAdvisor URL found (async): title=%s, url=%s", title, url)
+        return url
+
+    logger.warning("No valid TripAdvisor Restaurant_Review URL found (async) for query: %s", query)
+    return None
+
+
+async def resolve_yelp_url_from_search_async(
+    restaurant_name: str,
+    restaurant_location: str,
+    settings: Settings | None = None,
+) -> str | None:
+    """Async Yelp URL resolution via Google Search actor."""
+    if settings is None:
+        from app.config import get_settings
+
+        settings = get_settings()
+
+    cleaned_name, cleaned_location = _remove_duplicate_location_from_name(
+        restaurant_name.strip(),
+        restaurant_location.strip(),
+    )
+    query = f"{_sanitise_query_input(cleaned_name)}, {_sanitise_query_input(cleaned_location)} Yelp"
+
+    try:
+        organic_results = await _search_with_google_async(settings, query, max_results=10)
+    except SearchUrlResolverError as e:
+        logger.warning("Google Search (async) failed for Yelp query '%s': %s", query, e)
+        return None
+
+    if not organic_results:
+        logger.warning("Yelp search (async) returned no organicResults for query: %s", query)
+        return None
+
+    for result in organic_results:
+        url = str(result.get("url") or "").strip()
+        title = str(result.get("title") or "")
+        if not url:
+            continue
+        url_lower = url.lower()
+        if "yelp." not in url_lower or "/biz/" not in url_lower:
+            continue
+        logger.info("Yelp URL found (async): title=%s, url=%s", title, url)
+        return url
+
+    logger.warning("No valid Yelp /biz/ URL found (async) for query: %s", query)
+    return None

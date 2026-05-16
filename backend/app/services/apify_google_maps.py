@@ -179,8 +179,8 @@ def fetch_google_reviews(
 
     items: list[dict] = []
     for item in client.dataset(dataset_id).iterate_items():
-        if isinstance(item, dict):
-            items.append(item)
+            if isinstance(item, dict):
+                items.append(item)
 
     items = _iter_place_items(items)
     normalized: list[GoogleReviewNormalized] = []

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 
+
 type Platform = 'google' | 'tripadvisor' | 'yelp';
 type Sentiment = 'positive' | 'neutral' | 'negative';
 type TimeRange = 'week' | 'month';
@@ -34,9 +35,57 @@ const sentimentColors: Record<Sentiment, string> = {
 
 
 const timeRangeLabels: Record<TimeRange, string> = {
-  'week': 'This week',
-  'month': 'This month',
+  week: 'This week',
+  month: 'This month',
 };
+
+/** Local calendar YYYY-MM-DD (matches how users read "this week / this month"). */
+function localTodayKey(): string {
+  const n = new Date();
+  const y = n.getFullYear();
+  const m = String(n.getMonth() + 1).padStart(2, '0');
+  const d = String(n.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Parse YYYY-MM-DD as a local calendar date at noon (stable for comparisons). */
+function parseLocalYmd(ymd: string): Date {
+  const [y, mo, d] = ymd.split('-').map((x) => parseInt(x, 10));
+  return new Date(y, mo - 1, d, 12, 0, 0, 0);
+}
+
+/** Same calendar day the user sees in the UI (not UTC `toISOString` slice). */
+function formatLocalYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Local calendar date for a review timestamp — matches list date display & week/month bounds. */
+function reviewLocalDateKey(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    return formatLocalYmd(d);
+  } catch {
+    return null;
+  }
+}
+
+/** Monday 00:00 – Sunday 23:59:59.999 local, week containing `ref`. */
+function localWeekRange(ref: Date): { start: Date; end: Date } {
+  const cal = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 0, 0, 0, 0);
+  const day = cal.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const start = new Date(cal);
+  start.setDate(cal.getDate() + mondayOffset);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
 
 function ReviewItem({ review }: { review: Review }) {
   const formattedDate = review.date_iso
@@ -76,43 +125,44 @@ function ReviewItem({ review }: { review: Review }) {
 export default function RecentReviewsList({ reviews, onViewAll }: RecentReviewsListProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
 
-  // Derive cutoff relative to the latest review date (so demo data always has "recent" items)
-  const latestDate = useMemo(() => {
-    const dates = reviews
-      .map((r) => r.date_iso)
-      .filter(Boolean)
-      .sort() as string[];
-    return dates.length > 0 ? new Date(dates[dates.length - 1] + 'T23:59:59') : new Date();
-  }, [reviews]);
+  /**
+   * "This week / this month" = calendar week / calendar month that contain **today** (local).
+   * Bounds are [lo, hi] as local YYYY-MM-DD strings so filters stay within 7 days vs ~28–31 days.
+   */
+  const { lo, hi } = useMemo(() => {
+    const todayKey = localTodayKey();
+    const ref = parseLocalYmd(todayKey);
+    if (timeRange === 'week') {
+      const { start, end } = localWeekRange(ref);
+      let weekLo = formatLocalYmd(start);
+      let weekHi = formatLocalYmd(end);
+      if (weekHi > todayKey) weekHi = todayKey;
+      return { lo: weekLo, hi: weekHi };
+    }
+    const yStart = new Date(ref.getFullYear(), ref.getMonth(), 1, 0, 0, 0, 0);
+    const lastDom = new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 12, 0, 0, 0);
+    const monthEndKey = formatLocalYmd(lastDom);
+    /** Cap month at today so we never treat future days as in-range. */
+    const hiKey = monthEndKey > todayKey ? todayKey : monthEndKey;
+    return { lo: formatLocalYmd(yStart), hi: hiKey };
+  }, [timeRange]);
 
   const filtered = useMemo(() => {
-    // Compute calendar start for the selected range (relative to latestDate)
-    let rangeStart: Date;
-    if (timeRange === 'week') {
-      // Monday of the week containing latestDate
-      const day = latestDate.getDay(); // 0=Sun…6=Sat
-      const diff = day === 0 ? -6 : 1 - day;
-      rangeStart = new Date(latestDate);
-      rangeStart.setDate(latestDate.getDate() + diff);
-      rangeStart.setHours(0, 0, 0, 0);
-    } else {
-      // 1st of the month containing latestDate
-      rangeStart = new Date(latestDate.getFullYear(), latestDate.getMonth(), 1, 0, 0, 0, 0);
-    }
-
     const inRange = reviews.filter((r) => {
-      if (r.date_iso && new Date(r.date_iso) < rangeStart) return false;
-      return true;
+      const k = reviewLocalDateKey(r.date_iso);
+      if (!k) return false;
+      return k >= lo && k <= hi;
     });
 
-    // Sort by date descending (newest first)
     return inRange.sort((a, b) => {
-      if (!a.date_iso && !b.date_iso) return 0;
-      if (!a.date_iso) return 1;
-      if (!b.date_iso) return -1;
-      return new Date(b.date_iso).getTime() - new Date(a.date_iso).getTime();
+      const ka = reviewLocalDateKey(a.date_iso);
+      const kb = reviewLocalDateKey(b.date_iso);
+      if (!ka && !kb) return 0;
+      if (!ka) return 1;
+      if (!kb) return -1;
+      return kb.localeCompare(ka);
     });
-  }, [reviews, timeRange, latestDate]);
+  }, [reviews, lo, hi]);
 
   const timeRanges: TimeRange[] = ['week', 'month'];
 

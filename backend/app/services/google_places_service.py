@@ -26,11 +26,53 @@ class GooglePlacesService:
         "meal_takeaway", "meal_delivery", "night_club",
     }
 
+    def autocomplete_place_predictions(
+        self,
+        input_text: str,
+        types: str = "establishment",
+        components: Optional[Dict[str, List[str]]] = None,
+        *,
+        food_only: bool = True,
+    ) -> List[Dict]:
+        """Raw Places Autocomplete call; optionally keep only food/dining establishments."""
+        try:
+            if components is None:
+                components = {"country": ["au"]}
+
+            result = self.client.places_autocomplete(
+                input_text=input_text,
+                types=types,
+                components=components,
+            )
+
+            if food_only:
+                filtered = [
+                    p
+                    for p in result
+                    if self._FOOD_TYPES.intersection(p.get("types", []))
+                ]
+                logger.info(
+                    "Autocomplete: %s total, %s food places for '%s'",
+                    len(result),
+                    len(filtered),
+                    input_text,
+                )
+                return filtered
+
+            logger.info(
+                "Autocomplete (unfiltered): %s predictions for '%s'", len(result), input_text
+            )
+            return list(result)
+
+        except Exception as e:
+            logger.error("Autocomplete API error: %s", e)
+            raise
+
     def autocomplete_places(
         self,
         input_text: str,
         types: str = "establishment",
-        components: Optional[Dict[str, List[str]]] = None
+        components: Optional[Dict[str, List[str]]] = None,
     ) -> List[Dict]:
         """
         Search for restaurant suggestions using Google Places Autocomplete.
@@ -43,30 +85,35 @@ class GooglePlacesService:
         Returns:
             List of place predictions filtered to food/dining establishments.
         """
-        try:
-            if components is None:
-                components = {'country': ['au']}
+        return self.autocomplete_place_predictions(
+            input_text, types=types, components=components, food_only=True
+        )
 
-            result = self.client.places_autocomplete(
-                input_text=input_text,
-                types=types,
-                components=components
-            )
+    def resolve_first_place_id_for_restaurant(
+        self,
+        *,
+        restaurant_name: str,
+        restaurant_location: str,
+    ) -> Optional[str]:
+        """
+        Use Places Autocomplete and return place_id from the **first** prediction.
 
-            # Filter to food-related places only
-            filtered = [
-                p for p in result
-                if self._FOOD_TYPES.intersection(p.get("types", []))
-            ]
+        Prefer food-type matches; if that yields nothing, use the first unfiltered suggestion.
+        """
+        q = f"{restaurant_name.strip()}, {restaurant_location.strip()}".strip(" ,")
+        if not q:
+            return None
 
-            logger.info(
-                f"Autocomplete: {len(result)} total, {len(filtered)} food places for '{input_text}'"
-            )
-            return filtered
+        preds = self.autocomplete_place_predictions(q, food_only=True)
+        if not preds:
+            preds = self.autocomplete_place_predictions(q, food_only=False)
+        if not preds:
+            return None
 
-        except Exception as e:
-            logger.error(f"Autocomplete API error: {e}")
-            raise
+        pid = preds[0].get("place_id")
+        if isinstance(pid, str) and pid.strip():
+            return pid.strip()
+        return None
 
     def get_place_details(self, place_id: str) -> Dict:
         """
@@ -89,6 +136,7 @@ class GooglePlacesService:
                     "maxReviews": 0,  # We don't need reviews here
                 }
 
+                items: list = []
                 run = self.apify_client.actor(self.settings.apify_google_actor_id).call(
                     run_input=run_input,
                     wait_secs=30
@@ -98,32 +146,32 @@ class GooglePlacesService:
                     dataset_id = run["defaultDatasetId"]
                     items = list(self.apify_client.dataset(dataset_id).iterate_items())
 
-                    if items:
-                        place = items[0]
+                if items:
+                    place = items[0]
 
-                        # Extract coordinates
-                        location = place.get('location', {})
+                    # Extract coordinates
+                    location = place.get('location', {})
 
-                        details = {
-                            'place_id': place.get('placeId') or place_id,
-                            'name': place.get('title') or place.get('name'),
-                            'address': place.get('address'),
-                            'coordinates': {
-                                'lat': location.get('lat'),
-                                'lng': location.get('lng')
-                            } if location else None,
-                            'rating': place.get('totalScore'),
-                            'total_ratings': place.get('reviewsCount'),
-                            'google_maps_url': place.get('url'),
-                            'website': place.get('website'),
-                            'phone': place.get('phone'),
-                            'price_level': place.get('priceLevel'),
-                            'types': place.get('categoryName', '').split(',') if place.get('categoryName') else [],
-                            'opening_hours': []
-                        }
+                    details = {
+                        'place_id': place.get('placeId') or place_id,
+                        'name': place.get('title') or place.get('name'),
+                        'address': place.get('address'),
+                        'coordinates': {
+                            'lat': location.get('lat'),
+                            'lng': location.get('lng')
+                        } if location else None,
+                        'rating': place.get('totalScore'),
+                        'total_ratings': place.get('reviewsCount'),
+                        'google_maps_url': place.get('url'),
+                        'website': place.get('website'),
+                        'phone': place.get('phone'),
+                        'price_level': place.get('priceLevel'),
+                        'types': place.get('categoryName', '').split(',') if place.get('categoryName') else [],
+                        'opening_hours': []
+                    }
 
-                        logger.info(f"Retrieved details via Apify for place_id: {place_id}")
-                        return details
+                    logger.info(f"Retrieved details via Apify for place_id: {place_id}")
+                    return details
 
             # Fallback to Google Places API if Apify is not available
             logger.warning("Apify not available, falling back to Google Places API")
