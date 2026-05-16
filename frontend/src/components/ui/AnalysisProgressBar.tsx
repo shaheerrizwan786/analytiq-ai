@@ -98,7 +98,7 @@ export default function AnalysisProgressBar({
       {/* Individual progress bars for each platform */}
       <div className="space-y-4">
         {stages.map((stage) => {
-          const config = STAGE_CONFIG[stage];
+          const config = STAGE_CONFIG[stage as keyof typeof STAGE_CONFIG];
           const status = stageStatuses[stage];
           const progress = getProgressPercentage(status);
           const isActive = status === 'started';

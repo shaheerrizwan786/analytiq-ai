@@ -70,7 +70,7 @@ export interface ProgressUpdate {
 export async function analyzeRestaurantStream(
   name: string,
   location: string,
-  placeDetails?: PlaceDetails,
+  placeDetails: PlaceDetails | undefined,
   onProgress: (update: ProgressUpdate) => void
 ): Promise<AnalyzeResponse> {
   const body: any = { name, location };
