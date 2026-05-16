@@ -117,7 +117,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
               <div className="flex gap-1">
                 <button
                   onClick={() => setActiveTab('overview')}
-                  className={`px-3 py-2.5 sm:px-4 sm:py-2 text-sm font-medium transition-colors ${
+                  className={`px-3 py-3 sm:px-4 sm:py-2 text-sm font-medium transition-colors ${
                     activeTab === 'overview'
                       ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
@@ -127,7 +127,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                 </button>
                 <button
                   onClick={() => setActiveTab('reviews')}
-                  className={`px-3 py-2.5 sm:px-4 sm:py-2 text-sm font-medium transition-colors ${
+                  className={`px-3 py-3 sm:px-4 sm:py-2 text-sm font-medium transition-colors ${
                     activeTab === 'reviews'
                       ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
@@ -137,7 +137,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                 </button>
                 <button
                   onClick={() => setActiveTab('trends')}
-                  className={`px-3 py-2.5 sm:px-4 sm:py-2 text-sm font-medium transition-colors ${
+                  className={`px-3 py-3 sm:px-4 sm:py-2 text-sm font-medium transition-colors ${
                     activeTab === 'trends'
                       ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
