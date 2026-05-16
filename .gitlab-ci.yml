@@ -8,8 +8,6 @@ stages:
 build-frontend:
   stage: build
   image: node:20-alpine
-  tags:
-    - shared
   variables:
     # Set this CI/CD variable in GitLab → Settings → CI/CD → Variables
     # to point to your deployed backend URL (e.g. https://your-app.railway.app)
@@ -37,8 +35,6 @@ build-frontend:
 # ──────────────────────────────────────────────────────────────────────────────
 pages:
   stage: deploy
-  tags:
-    - shared
   script:
     - echo "Deploying to GitLab Pages"
   artifacts:
