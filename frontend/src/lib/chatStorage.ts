@@ -1,5 +1,17 @@
 // Chat conversation persistence — stored in localStorage per restaurant
 
+/** UUID v4 — falls back to Math.random on HTTP (iOS requires HTTPS for crypto.randomUUID) */
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // RFC 4122 v4 fallback
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 export type MessageRole = 'user' | 'assistant';
 
 export interface ChatMsg {
@@ -21,21 +33,15 @@ export interface Conversation {
   updatedAt: number;
 }
 
-const STORAGE_KEY = 'analytiq_conversations';
+// In-memory store — no persistence across page reloads (demo mode)
+let _store: Conversation[] = [];
 
 function load(): Conversation[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Conversation[]) : [];
-  } catch {
-    return [];
-  }
+  return _store;
 }
 
 function save(conversations: Conversation[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+  _store = conversations;
 }
 
 function restaurantKey(name: string, location: string): string {
@@ -59,7 +65,7 @@ export function getConversations(name: string, location: string): Conversation[]
 export function createConversation(name: string, location: string, firstMessage: string): Conversation {
   const all = load();
   const conv: Conversation = {
-    id: crypto.randomUUID(),
+    id: generateId(),
     restaurantKey: restaurantKey(name, location),
     title: titleFromMessage(firstMessage),
     messages: [],
@@ -74,7 +80,7 @@ export function createConversation(name: string, location: string, firstMessage:
 export function addMessage(conversationId: string, role: MessageRole, content: string): ChatMsg {
   const all = load();
   const msg: ChatMsg = {
-    id: crypto.randomUUID(),
+    id: generateId(),
     role,
     content,
     timestamp: Date.now(),

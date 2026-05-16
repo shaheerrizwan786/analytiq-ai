@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const viewport: Viewport = {
+  width: 'device-width',
   viewportFit: 'cover',
   initialScale: 1,
 };

@@ -89,8 +89,8 @@ export default function RestaurantAutocomplete({
           setSuggestions(data.predictions || []);
           setShowDropdown(true);
         }
-      } catch (error) {
-        console.error('Failed to fetch suggestions:', error);
+      } catch {
+        // Backend unavailable — silently clear suggestions
       } finally {
         setIsLoading(false);
       }

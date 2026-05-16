@@ -18,10 +18,14 @@ const securityHeaders = [
     value: "1; mode=block",
   },
   {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=()",
+  },
+  {
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires unsafe-inline/eval in dev
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",
       "font-src 'self' data:",
@@ -32,8 +36,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Use webpack instead of Turbopack to prevent memory crashes
-  // Turbopack spawns an unbounded Rust watcher process on top of Node
+  // Static export for GitLab Pages / Vercel hosting
+  output: "export",
+  images: { unoptimized: true },
+  trailingSlash: true,
   async headers() {
     return [
       {

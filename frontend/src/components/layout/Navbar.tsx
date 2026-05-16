@@ -1,31 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getSession, clearSession } from '@/lib/auth';
 import { toggleTheme, getTheme, getVariant, setVariant, type Theme, type Variant } from '@/lib/theme';
-import AuthModal from '@/components/auth/AuthModal';
 import AccessibilityPanel from '@/components/ui/AccessibilityPanel';
 import { useAppMode } from '@/lib/modeContext';
 
 export default function Navbar() {
-  const [session, setSession] = useState<string | null>(null);
   const [theme, setThemeState] = useState<Theme>('light');
   const [variant, setVariantState] = useState<Variant>('warm');
-  const [showModal, setShowModal] = useState(false);
   const [showA11y, setShowA11y] = useState(false);
   const { mode, restaurantName } = useAppMode();
 
   useEffect(() => {
-    setSession(getSession());
     setThemeState(getTheme());
     setVariantState(getVariant());
   }, []);
-
-  function handleSignOut() {
-    clearSession();
-    setSession(null);
-    window.location.reload();
-  }
 
   function handleThemeToggle() {
     const next = toggleTheme();
@@ -37,11 +26,6 @@ export default function Navbar() {
     setVariantState(v);
     // Warm theme is light-only — reflect that in state
     if (v === 'warm') setThemeState('light');
-  }
-
-  function handleAuthSuccess(email: string) {
-    setSession(email);
-    setShowModal(false);
   }
 
   return (
@@ -130,37 +114,9 @@ export default function Navbar() {
             {/* Accessibility panel popover */}
             {showA11y && <AccessibilityPanel onClose={() => setShowA11y(false)} />}
 
-            {/* Auth */}
-            {session ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block truncate max-w-[160px]">
-                  {session}
-                </span>
-                <button
-                  onClick={handleSignOut}
-                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  Sign out
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowModal(true)}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg btn-vt-cta text-white transition-all duration-150"
-              >
-                Sign in
-              </button>
-            )}
           </div>
         </div>
       </header>
-
-      {showModal && (
-        <AuthModal
-          onSuccess={handleAuthSuccess}
-          onClose={() => setShowModal(false)}
-        />
-      )}
     </>
   );
 }
