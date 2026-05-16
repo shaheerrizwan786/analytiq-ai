@@ -15,6 +15,34 @@ from app.config import get_settings
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/places", tags=["places"])
 
+_DEMO_RESTAURANTS = [
+    {"place_id": "demo_nobu", "name": "Nobu Melbourne", "address": "Crown Complex, Southbank VIC 3006"},
+    {"place_id": "demo_tipo", "name": "Tipo 00", "address": "361 Little Bourke St, Melbourne VIC 3000"},
+    {"place_id": "demo_tonka", "name": "Tonka", "address": "2 Docklands Dr, Docklands VIC 3008"},
+    {"place_id": "demo_gimlet", "name": "Gimlet at Cavendish House", "address": "33 Russell St, Melbourne VIC 3000"},
+    {"place_id": "demo_noodle_kingdom", "name": "Noodle Kingdom Clayton", "address": "Clayton VIC 3168"},
+    {"place_id": "demo_ebi", "name": "Ebi Sushi Glen Waverley", "address": "Glen Waverley VIC 3150"},
+    {"place_id": "demo_stag", "name": "The Stag Clayton", "address": "Clayton VIC 3168"},
+    {"place_id": "demo_chaddy", "name": "Chadstone Food Court", "address": "1341 Dandenong Rd, Malvern East VIC 3145"},
+]
+
+
+def _demo_autocomplete(query: str) -> list[PlaceAutocompletePrediction]:
+    q = query.lower()
+    matches = [
+        r for r in _DEMO_RESTAURANTS
+        if q in r["name"].lower() or q in r["address"].lower()
+    ] or _DEMO_RESTAURANTS[:5]
+    return [
+        PlaceAutocompletePrediction(
+            place_id=r["place_id"],
+            description=f"{r['name']}, {r['address']}",
+            structured_formatting={"main_text": r["name"], "secondary_text": r["address"]},
+            types=["restaurant", "food", "establishment"],
+        )
+        for r in matches[:5]
+    ]
+
 
 @router.get("/autocomplete", response_model=PlaceAutocompleteResponse)
 @limiter.limit("30/minute")
@@ -29,6 +57,10 @@ def autocomplete_places(
 
     Returns a list of place predictions with place_id and description.
     """
+    settings = get_settings()
+    if not settings.google_api_key:
+        return PlaceAutocompleteResponse(predictions=_demo_autocomplete(input))
+
     try:
         service = GooglePlacesService()
         predictions = service.autocomplete_places(input_text=input, types=types)
@@ -48,7 +80,7 @@ def autocomplete_places(
 
     except ValueError as e:
         logger.error("Configuration error in autocomplete", extra={"error": type(e).__name__})
-        raise HTTPException(status_code=500, detail="Google API key not configured")
+        return PlaceAutocompleteResponse(predictions=_demo_autocomplete(input))
     except Exception as e:
         logger.error("Autocomplete request failed", extra={"error": type(e).__name__})
         raise HTTPException(status_code=500, detail="Failed to fetch autocomplete suggestions")
@@ -66,6 +98,20 @@ def place_details(
 
     Returns place details including name, address, coordinates, rating, URL, etc.
     """
+    settings = get_settings()
+    if not settings.google_api_key:
+        demo = next((r for r in _DEMO_RESTAURANTS if r["place_id"] == place_id), None)
+        if demo:
+            return PlaceDetailsResponse(
+                place_id=demo["place_id"],
+                name=demo["name"],
+                address=demo["address"],
+                coordinates={"lat": -37.8136, "lng": 144.9631},
+                rating=4.2,
+                google_maps_url=f"https://www.google.com/maps/search/?api=1&query={demo['name'].replace(' ', '+')}",
+            )
+        raise HTTPException(status_code=404, detail="Place not found")
+
     try:
         service = GooglePlacesService()
         details = service.get_place_details(place_id=place_id)
