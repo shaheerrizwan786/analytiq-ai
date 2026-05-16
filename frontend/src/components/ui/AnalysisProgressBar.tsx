@@ -14,7 +14,7 @@ interface StageProgress {
 interface AnalysisProgressBarProps {
   currentStage: ProgressStage;
   stageStatuses: Record<ProgressStage, StageStatus>;
-  stageMessages?: Record<ProgressStage, string>;
+  stageMessages?: Partial<Record<ProgressStage, string>>;
 }
 
 const STAGE_CONFIG = {
