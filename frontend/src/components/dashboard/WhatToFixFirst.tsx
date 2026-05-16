@@ -95,7 +95,7 @@ export default function WhatToFixFirst({ issue, onAskAdvisor }: WhatToFixFirstPr
       <div className="mt-5 pt-5 border-t border-orange-100 dark:border-orange-900/30">
         <button
           onClick={onAskAdvisor}
-          className="text-sm font-medium text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 rounded-lg px-4 py-2 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors disabled:opacity-40"
+          className="text-sm font-medium text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 rounded-lg px-4 py-2.5 sm:py-2 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors disabled:opacity-40"
           disabled={!onAskAdvisor}
         >
           Ask AI Advisor →

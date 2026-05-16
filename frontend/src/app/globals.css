@@ -145,6 +145,15 @@ body {
   animation: float-blob 16s ease-in-out infinite reverse;
 }
 
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(1.5rem); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.7s ease-out forwards;
+}
+
 /* =====================================================
    Accessibility & Demo mode
    ===================================================== */

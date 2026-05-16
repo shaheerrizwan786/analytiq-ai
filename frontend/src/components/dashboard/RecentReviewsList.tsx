@@ -146,7 +146,7 @@ export default function RecentReviewsList({ reviews, onViewAll }: RecentReviewsL
           <button
             key={tr}
             onClick={() => setTimeRange(tr)}
-            className={`text-xs font-medium px-3 py-1 rounded-md transition-colors ${
+            className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
               timeRange === tr
                 ? 'bg-white dark:bg-[var(--dk-card)] text-gray-800 dark:text-gray-100 shadow-sm'
                 : 'text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'

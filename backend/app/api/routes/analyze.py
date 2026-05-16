@@ -1,16 +1,10 @@
-import logging
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 
-from app.api.dependencies import limiter, verify_api_key
 from app.config import get_settings
 from app.schemas import AnalyzeRequest, AnalyzeResponse, ReviewItem
 from app.services.apify_reviews_multi import ApifyReviewsError, fetch_reviews_for_source
-from app.services.apify_google_reviews import (
-    GoogleReviewsError,
-    fetch_google_reviews_detailed,
-)
 from app.services.insights_stub import stub_insights_from_reviews
 from app.services.llm_service import generate_insights
 from app.services.review_sync_store import create_default_sync_store, reset_all
@@ -27,24 +21,9 @@ from app.services.yelp_discovery import YelpDiscoveryError, discover_yelp_busine
 
 router = APIRouter(prefix="/api/v1", tags=["analyze"])
 
-logger = logging.getLogger(__name__)
-
-_PII_CONTEXT_KEYS = frozenset({"authorName", "profileUrl", "authorUrl", "reviewerUrl"})
-
-
-def _strip_pii(review_context: dict | None) -> dict | None:
-    """Remove known PII keys from a review_context dict before persistence."""
-    if not review_context:
-        return review_context
-    return {k: v for k, v in review_context.items() if k not in _PII_CONTEXT_KEYS}
-
-
-
-
 
 @router.post("/restaurants/analyze", response_model=AnalyzeResponse)
-@limiter.limit("10/minute")
-def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends(verify_api_key)) -> AnalyzeResponse:
+def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
     """Incremental sync across Google + TripAdvisor + Yelp using name + location only.
 
     URL resolution order (for URL-based sources):
@@ -111,10 +90,8 @@ def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends
         restaurant_location=body.location,
     )
     if not resolved_tripadvisor_url:
-        # Use address for better search accuracy if available
-        search_name = f"{body.name} {body.address}" if body.address else body.name
         try:
-            t_search_url = resolve_tripadvisor_url_from_search(search_name.strip(), body.location.strip())
+            t_search_url = resolve_tripadvisor_url_from_search(body.name.strip(), body.location.strip())
         except SearchUrlResolverError as e:
             source_errors.append(f"tripadvisor-search: {str(e)}")
             t_search_url = None
@@ -159,10 +136,8 @@ def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends
             restaurant_location=body.location,
         )
         if not resolved_yelp_url:
-            # Use address for better search accuracy if available
-            search_name = f"{body.name} {body.address}" if body.address else body.name
             try:
-                y_search_url = resolve_yelp_url_from_search(search_name.strip(), body.location.strip())
+                y_search_url = resolve_yelp_url_from_search(body.name.strip(), body.location.strip())
             except SearchUrlResolverError as e:
                 source_errors.append(f"yelp-search: {str(e)}")
                 y_search_url = None
@@ -200,93 +175,13 @@ def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends
     else:
         source_stats.append("yelp(skipped:disabled)")
 
-    # Fetch order: Google (two-stage) -> TripAdvisor -> (Yelp if enabled)
+    # Fetch order: Google -> TripAdvisor -> (Yelp if enabled)
     for source in ("google", "tripadvisor", "yelp"):
         if source == "yelp" and not settings.apify_yelp_enabled:
             continue
 
         if source == "yelp" and not resolved_yelp_url:
             source_stats.append("yelp(skipped:no_resolved_url)")
-            continue
-
-        # Google uses two-stage extraction
-        if source == "google":
-            # Prioritize Google Places API data from request body
-            if body.google_place_url:
-                # Use URL directly from Places Autocomplete
-                cached_google_url = body.google_place_url
-            elif body.google_place_id:
-                # Construct URL from place_id
-                cached_google_url = f"https://www.google.com/maps/place/?q=place_id:{body.google_place_id}"
-            else:
-                # Fallback to cached URL from previous runs
-                cached_google_url = sync_store.get_source_place_link(
-                    source="google",
-                    restaurant_name=body.name,
-                    restaurant_location=body.location,
-                )
-
-            try:
-                google_reviews, google_place_url, google_dataset_urls, google_stats = (
-                    fetch_google_reviews_detailed(
-                        settings,
-                        restaurant_name=body.name.strip(),
-                        restaurant_location=body.location.strip(),
-                        since=None,
-                        cached_place_url=cached_google_url,
-                    )
-                )
-
-                # Cache the place URL
-                if google_place_url and not cached_google_url:
-                    sync_store.upsert_source_place_link(
-                        source="google",
-                        restaurant_name=body.name,
-                        restaurant_location=body.location,
-                        source_url=google_place_url,
-                        source_place_id=google_stats.get("place_id"),
-                    )
-
-                inserted, window = sync_store.upsert_reviews_and_state(
-                    source="google",
-                    restaurant_name=body.name.strip(),
-                    restaurant_location=body.location.strip(),
-                    rows=[
-                        {
-                            "review_key": r.review_key,
-                            "review_date_iso": r.date_iso,
-                            "text": r.text,
-                            "rating": r.rating,
-                            "review_context": _strip_pii(r.review_context),
-                            "review_detailed_rating": r.review_detailed_rating,
-                        }
-                        for r in google_reviews
-                    ],
-                )
-
-                source_stats.append(
-                    f"google(returned={google_stats['returned_count']},"
-                    f"inserted={inserted},limit={google_stats['limit']})"
-                )
-
-                if inserted > 0:
-                    all_new_reviews.extend(google_reviews[:inserted])
-                    total_new += inserted
-
-                if google_dataset_urls:
-                    dataset_urls.append(f"google: {google_dataset_urls}")
-                if window.since is not None:
-                    range_from_values.append(window.since)
-                if window.until is not None:
-                    range_to_values.append(window.until)
-
-            except GoogleReviewsError as e:
-                source_errors.append(f"google: {str(e)}")
-            continue
-
-        # TripAdvisor and Yelp use existing multi-source extraction
-        if source == "tripadvisor" and not resolved_tripadvisor_url:
-            source_stats.append("tripadvisor(skipped:no_resolved_url)")
             continue
 
         # Always fetch the latest N reviews (no since filter).
@@ -358,34 +253,17 @@ def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends
     else:
         insights = stub
 
-    # Filter reviews based on include_empty_reviews setting
-    if settings.include_empty_reviews:
-        review_items = [
-            ReviewItem(
-                id=r.review_key,
-                source=r.source,
-                text=r.text,
-                rating=r.rating,
-                date_iso=r.date_iso,
-                review_context=r.review_context,
-                review_detailed_rating=r.review_detailed_rating,
-            )
-            for r in all_stored_reviews
-        ]
-    else:
-        review_items = [
-            ReviewItem(
-                id=r.review_key,
-                source=r.source,
-                text=r.text,
-                rating=r.rating,
-                date_iso=r.date_iso,
-                review_context=r.review_context,
-                review_detailed_rating=r.review_detailed_rating,
-            )
-            for r in all_stored_reviews
-            if r.text and r.text.strip()
-        ]
+    review_items = [
+        ReviewItem(
+            id=r.review_key,
+            source=r.source,
+            text=r.text,
+            rating=r.rating,
+            date_iso=r.date_iso,
+        )
+        for r in all_stored_reviews
+        if r.text
+    ]
 
     if total_new:
         detail = (
@@ -401,8 +279,7 @@ def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends
     if source_stats:
         detail = detail + " Stats: " + " | ".join(source_stats)
     if source_errors:
-        logger.warning("Source errors during analysis", extra={"errors": source_errors, "restaurant": body.name})
-        detail = detail + " Some sources were unavailable."
+        detail = detail + " Partial source errors: " + " | ".join(source_errors)
 
     return AnalyzeResponse(
         job_id=str(uuid.uuid4()),
@@ -420,7 +297,7 @@ def analyze_restaurant(request: Request, body: AnalyzeRequest, _: None = Depends
 
 
 @router.post("/admin/reset-review-cache")
-def reset_review_cache(_: None = Depends(verify_api_key)) -> dict[str, str]:
+def reset_review_cache() -> dict[str, str]:
     """One-click cleanup for local test DB tables (reviews + sync state + source links)."""
     reset_all()
     return {"status": "ok", "detail": "review cache cleared"}

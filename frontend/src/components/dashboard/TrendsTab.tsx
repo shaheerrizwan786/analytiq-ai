@@ -176,7 +176,7 @@ export default function TrendsTab({ reviews }: TrendsTabProps) {
             See how your ratings and review volume change week by week
           </p>
         </div>
-        <div className="flex gap-1 bg-gray-50 dark:bg-gray-900/40 rounded-lg p-0.5">
+        <div className="flex flex-wrap gap-1 bg-gray-50 dark:bg-gray-900/40 rounded-lg p-0.5">
           {(Object.keys(periodLabels) as Period[]).map((p) => (
             <button
               key={p}

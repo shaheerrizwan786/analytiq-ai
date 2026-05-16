@@ -1,17 +1,15 @@
 ﻿'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import RestaurantAutocomplete from '@/components/ui/RestaurantAutocomplete';
 import AppShell from '@/components/layout/AppShell';
-import AuthModal from '@/components/auth/AuthModal';
 import DashboardView, { DashboardData } from '@/components/dashboard/DashboardView';
 import { analyzeRestaurantStream, AnalyzeResponse } from '@/lib/api';
 import type { ProgressStage, StageStatus } from '@/components/ui/AnalysisProgressBar';
 import AnalysisProgressBar from '@/components/ui/AnalysisProgressBar';
-import { getSession, getSavedRestaurant, saveRestaurant } from '@/lib/auth';
 import { useAppMode } from '@/lib/modeContext';
 import { demoDashboardData } from '@/lib/demoData';
 
@@ -156,32 +154,17 @@ function LogoMark({ size = 36 }: { size?: number }) {
 function LandingPage({
   onDemo,
   onAnalyze,
-  onSignInSuccess,
 }: {
   onDemo: () => void;
   onAnalyze: () => void;
-  onSignInSuccess: (email: string) => void;
 }) {
-  const [showAuth, setShowAuth] = useState(false);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 60);
-    return () => clearTimeout(t);
-  }, []);
-
-  function handleAuthSuccess(email: string) {
-    setShowAuth(false);
-    onSignInSuccess(email);
-  }
-
   return (
-    <div className="relative min-h-screen bg-[#0C0C18] overflow-hidden flex flex-col">
-      {/* Animated background orbs */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="animate-float-blob absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full bg-violet-600/20 blur-3xl" />
-        <div className="animate-float-blob-delay absolute -bottom-48 -right-48 w-[500px] h-[500px] rounded-full bg-cyan-500/15 blur-3xl" />
-        <div className="animate-float-blob absolute top-1/3 right-1/4 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl" />
+    <div className="relative min-h-screen bg-[#0C0C18] overflow-x-hidden flex flex-col">
+      {/* Animated background orbs — pointer-events-none on each element for iOS compositor safety */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <div className="pointer-events-none animate-float-blob absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full bg-violet-600/20 blur-3xl" />
+        <div className="pointer-events-none animate-float-blob-delay absolute -bottom-48 -right-48 w-[500px] h-[500px] rounded-full bg-cyan-500/15 blur-3xl" />
+        <div className="pointer-events-none animate-float-blob absolute top-1/3 right-1/4 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl" />
       </div>
 
       {/* Top bar */}
@@ -193,21 +176,11 @@ function LandingPage({
             <span className="text-gray-200"> AI</span>
           </span>
         </div>
-        <button
-          onClick={() => setShowAuth(true)}
-          className="text-sm font-medium text-gray-400 hover:text-gray-100 transition-colors"
-        >
-          Sign in
-        </button>
       </header>
 
       {/* Hero */}
       <main className="relative z-10 flex flex-1 items-center justify-center px-4">
-        <div
-          className={`w-full max-w-2xl text-center transition-all duration-700 ease-out ${
-            visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-          }`}
-        >
+        <div className="w-full max-w-2xl text-center animate-fade-in-up">
           {/* Status badge */}
           <div className="inline-flex items-center gap-2 mb-8 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-gray-400 backdrop-blur-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -229,32 +202,29 @@ function LandingPage({
             exactly what to fix and what to celebrate.
           </p>
 
-          {/* CTAs */}
+          {/* CTAs — Start analysis is primary */}
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
-              onClick={onDemo}
+              onClick={onAnalyze}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03] shadow-lg shadow-orange-500/25"
+              style={{ touchAction: 'manipulation' }}
             >
-              View live demo
+              Start analysis
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
             <button
-              onClick={onAnalyze}
+              onClick={onDemo}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-gray-100 font-semibold px-7 py-3.5 text-sm transition-all duration-150 hover:scale-[1.03] backdrop-blur-sm"
+              style={{ touchAction: 'manipulation' }}
             >
-              Start analysis
+              View live demo
             </button>
           </div>
-
-          {/* Social proof */}
-          <p className="mt-10 text-xs text-gray-600">
-            Trusted by independent restaurants &middot; No credit card required &middot; Results in under 2 minutes
-          </p>
         </div>
       </main>
 
       {/* Feature strip */}
-      <div className="relative z-10 border-t border-white/5 bg-white/[0.02] backdrop-blur-sm">
+      <div className="pointer-events-none relative z-10 border-t border-white/5 bg-white/[0.02] backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-6 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
           {[
             { icon: '📊', label: 'Sentiment trends', desc: 'Track how guest mood shifts over time' },
@@ -270,9 +240,6 @@ function LandingPage({
         </div>
       </div>
 
-      {showAuth && (
-        <AuthModal onSuccess={handleAuthSuccess} onClose={() => setShowAuth(false)} />
-      )}
     </div>
   );
 }
@@ -301,17 +268,6 @@ function AnalyzeForm({
   const [stageMessages, setStageMessages] = useState<Record<ProgressStage, string>>({
     google: '', tripadvisor: '', yelp: '', insights: '', complete: '',
   });
-
-  useEffect(() => {
-    const email = getSession();
-    if (email) {
-      const saved = getSavedRestaurant(email);
-      if (saved) {
-        setName(saved.name);
-        setLocation(saved.location);
-      }
-    }
-  }, []);
 
   const canSubmit = name.trim().length > 0 && location.trim().length > 0;
 
@@ -383,8 +339,6 @@ function AnalyzeForm({
     try {
       if (isDemoRestaurant(name.trim(), location.trim())) {
         await runDemoAnimation();
-        const email = getSession();
-        if (email) saveRestaurant(email, name.trim(), location.trim());
         onDone(demoDashboardData);
         return;
       }
@@ -403,8 +357,6 @@ function AnalyzeForm({
         },
       );
       const uiData = mapToUi(res, name.trim(), location.trim());
-      const email = getSession();
-      if (email) saveRestaurant(email, name.trim(), location.trim());
       onDone(uiData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -532,11 +484,6 @@ export default function Home() {
     setView('analyze');
   }
 
-  function handleSignInSuccess() {
-    setMode('live');
-    setView('analyze');
-  }
-
   function handleAnalysisDone(data: DashboardData) {
     setDashboardData(data);
     setView('dashboard');
@@ -560,7 +507,6 @@ export default function Home() {
     <LandingPage
       onDemo={handleViewDemo}
       onAnalyze={handleStartAnalysis}
-      onSignInSuccess={handleSignInSuccess}
     />
   );
 }

@@ -1,31 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getSession, clearSession } from '@/lib/auth';
 import { toggleTheme, getTheme, getVariant, setVariant, type Theme, type Variant } from '@/lib/theme';
-import AuthModal from '@/components/auth/AuthModal';
 import AccessibilityPanel from '@/components/ui/AccessibilityPanel';
 import { useAppMode } from '@/lib/modeContext';
 
 export default function Navbar() {
-  const [session, setSession] = useState<string | null>(null);
   const [theme, setThemeState] = useState<Theme>('light');
   const [variant, setVariantState] = useState<Variant>('warm');
-  const [showModal, setShowModal] = useState(false);
   const [showA11y, setShowA11y] = useState(false);
   const { mode, restaurantName } = useAppMode();
 
   useEffect(() => {
-    setSession(getSession());
     setThemeState(getTheme());
     setVariantState(getVariant());
   }, []);
-
-  function handleSignOut() {
-    clearSession();
-    setSession(null);
-    window.location.reload();
-  }
 
   function handleThemeToggle() {
     const next = toggleTheme();
@@ -37,11 +26,6 @@ export default function Navbar() {
     setVariantState(v);
     // Warm theme is light-only — reflect that in state
     if (v === 'warm') setThemeState('light');
-  }
-
-  function handleAuthSuccess(email: string) {
-    setSession(email);
-    setShowModal(false);
   }
 
   return (
@@ -80,8 +64,8 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-3 relative">
-            {/* Palette variant toggle — two coloured dots */}
-            <div className="flex items-center gap-1.5" title="Switch colour palette">
+            {/* Palette variant toggle — two coloured dots (hidden on mobile to save space) */}
+            <div className="hidden sm:flex items-center gap-1.5" title="Switch colour palette">
               <button
                 onClick={() => handleVariantToggle('warm')}
                 aria-label="Warm palette"
@@ -99,7 +83,7 @@ export default function Navbar() {
             <button
               onClick={handleThemeToggle}
               aria-label="Toggle dark mode"
-              className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 min-w-9 min-h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               {theme === 'dark' ? (
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -119,7 +103,7 @@ export default function Navbar() {
               onClick={() => setShowA11y((p) => !p)}
               aria-label="Open accessibility settings"
               aria-expanded={showA11y}
-              className={`p-1.5 rounded-lg transition-colors ${showA11y ? 'bg-gray-100 dark:bg-[var(--dk-tint)] text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-[var(--dk-tint)] hover:text-gray-600 dark:hover:text-gray-300'}`}
+              className={`p-2 rounded-lg transition-colors ${showA11y ? 'bg-gray-100 dark:bg-[var(--dk-tint)] text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-[var(--dk-tint)] hover:text-gray-600 dark:hover:text-gray-300'}`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="3"/>
@@ -130,37 +114,9 @@ export default function Navbar() {
             {/* Accessibility panel popover */}
             {showA11y && <AccessibilityPanel onClose={() => setShowA11y(false)} />}
 
-            {/* Auth */}
-            {session ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block truncate max-w-[160px]">
-                  {session}
-                </span>
-                <button
-                  onClick={handleSignOut}
-                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  Sign out
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowModal(true)}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg btn-vt-cta text-white transition-all duration-150"
-              >
-                Sign in
-              </button>
-            )}
           </div>
         </div>
       </header>
-
-      {showModal && (
-        <AuthModal
-          onSuccess={handleAuthSuccess}
-          onClose={() => setShowModal(false)}
-        />
-      )}
     </>
   );
 }

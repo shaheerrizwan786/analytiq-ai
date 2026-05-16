@@ -200,7 +200,7 @@ export default function PerformanceScoreCard({ reviews }: PerformanceScoreCardPr
             {RATING_SEGMENTS.map((s) => (
               <span
                 key={s.label}
-                className={s.label === seg.label ? `font-bold ${seg.text}` : ''}
+                className={`hidden sm:inline ${s.label === seg.label ? `font-bold ${seg.text}` : ''}`}
               >
                 {s.label}
               </span>

@@ -75,7 +75,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
       {/* Demo mode ribbon */}
       {mode === 'demo' && (
         <div className="w-full shrink-0 bg-amber-500/10 border-b border-amber-400/30">
-          <div className="px-6 h-9 flex items-center justify-between">
+          <div className="px-4 sm:px-6 h-9 flex items-center justify-between">
             <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
               Demo mode &mdash; viewing sample data for The Meridian Kitchen
             </span>
@@ -96,7 +96,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
 
         {/* ── Left: scrollable dashboard column ── */}
         <div className="flex-1 min-w-0 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-8">
             {onBack && (
               <button
                 onClick={onBack}
@@ -117,7 +117,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
               <div className="flex gap-1">
                 <button
                   onClick={() => setActiveTab('overview')}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`px-3 py-3 sm:px-4 sm:py-2 text-sm font-medium transition-colors ${
                     activeTab === 'overview'
                       ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
@@ -127,7 +127,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                 </button>
                 <button
                   onClick={() => setActiveTab('reviews')}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`px-3 py-3 sm:px-4 sm:py-2 text-sm font-medium transition-colors ${
                     activeTab === 'reviews'
                       ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
@@ -137,7 +137,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
                 </button>
                 <button
                   onClick={() => setActiveTab('trends')}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`px-3 py-3 sm:px-4 sm:py-2 text-sm font-medium transition-colors ${
                     activeTab === 'trends'
                       ? 'border-b-2 border-[var(--accent)] text-[var(--accent)] dark:text-[var(--dk-accent3)]'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
