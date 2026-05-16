@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -62,4 +63,12 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    s = Settings()
+    # Direct os.environ fallback — pydantic-settings can miss Railway-injected vars
+    if not s.openai_api_key:
+        s.openai_api_key = os.environ.get("OPENAI_API_KEY") or None
+    if not s.google_api_key:
+        s.google_api_key = os.environ.get("GOOGLE_API_KEY") or None
+    if not s.apify_api_key:
+        s.apify_api_key = os.environ.get("APIFY_API_KEY") or None
+    return s
