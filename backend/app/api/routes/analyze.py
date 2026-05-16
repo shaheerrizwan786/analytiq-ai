@@ -33,7 +33,7 @@ def analyze_restaurant(body: AnalyzeRequest) -> AnalyzeResponse:
     if not settings.apify_api_key:
         raise HTTPException(
             status_code=503,
-            detail="APIFY_API_KEY is not configured. Add it to the repo root .env.local",
+            detail="Review fetching is not configured on this server. Please use demo mode to explore the app.",
         )
 
     sync_store = create_default_sync_store()

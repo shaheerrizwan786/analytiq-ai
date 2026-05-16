@@ -53,7 +53,7 @@ async def analyze_restaurant_stream(
 
     settings = get_settings()
     if not settings.apify_api_key:
-        yield send_progress("error", "failed", "APIFY_API_KEY is not configured")
+        yield send_progress("error", "failed", "Review fetching is not configured on this server. Please use demo mode to explore the app.")
         return
 
     sync_store = create_default_sync_store()

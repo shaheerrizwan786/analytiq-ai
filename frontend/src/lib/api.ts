@@ -115,15 +115,19 @@ export async function analyzeRestaurantStream(
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           const data = line.slice(6);
+          let update: ProgressUpdate | null = null;
           try {
-            const update = JSON.parse(data) as ProgressUpdate;
-            onProgress(update);
-
-            if (update.stage === 'complete' && update.result) {
-              finalResult = update.result;
-            }
+            update = JSON.parse(data) as ProgressUpdate;
           } catch (e) {
             console.error('Failed to parse SSE data:', e);
+          }
+          if (update) {
+            onProgress(update);
+            if (update.stage === 'complete' && update.result) {
+              finalResult = update.result;
+            } else if (update.stage === 'error') {
+              throw new Error(update.message || 'Analysis failed');
+            }
           }
         }
       }

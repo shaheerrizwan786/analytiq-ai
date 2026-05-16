@@ -30,4 +30,7 @@ def env_check() -> dict:
         "raw_apify_env": bool(os.environ.get("APIFY_API_KEY")),
         "total_env_vars": len(all_keys),
         "api_related_keys": sorted(api_related),
+        "railway_environment": os.environ.get("RAILWAY_ENVIRONMENT_NAME", "unknown"),
+        "railway_service": os.environ.get("RAILWAY_SERVICE_NAME", "unknown"),
+        "railway_git_branch": os.environ.get("RAILWAY_GIT_BRANCH", "unknown"),
     }
