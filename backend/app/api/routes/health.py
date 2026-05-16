@@ -26,7 +26,11 @@ def env_check() -> dict:
         "apify_api_key_set": bool(s.apify_api_key),
         "raw_openai_env": bool(os.environ.get("OPENAI_API_KEY")),
         "raw_google_env": bool(os.environ.get("GOOGLE_API_KEY")),
-        "raw_apify_env": bool(os.environ.get("APIFY_API_KEY")),
+        "raw_apify_env": bool(
+            os.environ.get("APIFY_API_KEY")
+            or os.environ.get("APIFY_TOKEN")
+            or os.environ.get("APIFY_KEY")
+        ),
         "total_env_vars": len(all_keys),
         "all_env_keys": all_keys,
         "api_related_keys": sorted(api_related),

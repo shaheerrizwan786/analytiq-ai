@@ -66,9 +66,23 @@ def get_settings() -> Settings:
     s = Settings()
     # Direct os.environ fallback — pydantic-settings can miss Railway-injected vars
     if not s.openai_api_key:
-        s.openai_api_key = os.environ.get("OPENAI_API_KEY") or None
+        s.openai_api_key = (
+            os.environ.get("OPENAI_API_KEY")
+            or os.environ.get("OPENAI_KEY")
+            or None
+        )
     if not s.google_api_key:
-        s.google_api_key = os.environ.get("GOOGLE_API_KEY") or None
+        s.google_api_key = (
+            os.environ.get("GOOGLE_API_KEY")
+            or os.environ.get("GOOGLE_MAPS_API_KEY")
+            or os.environ.get("GOOGLE_KEY")
+            or None
+        )
     if not s.apify_api_key:
-        s.apify_api_key = os.environ.get("APIFY_API_KEY") or None
+        s.apify_api_key = (
+            os.environ.get("APIFY_API_KEY")
+            or os.environ.get("APIFY_TOKEN")
+            or os.environ.get("APIFY_KEY")
+            or None
+        )
     return s
