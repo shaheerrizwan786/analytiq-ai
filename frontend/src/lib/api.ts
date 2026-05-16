@@ -103,34 +103,41 @@ export async function analyzeRestaurantStream(
   }
 
   let finalResult: AnalyzeResponse | null = null;
+  let lineBuffer = '';
+
+  const processSseLine = (line: string) => {
+    if (!line.startsWith('data: ')) return;
+    const data = line.slice(6);
+    let update: ProgressUpdate;
+    try {
+      update = JSON.parse(data) as ProgressUpdate;
+    } catch (e) {
+      console.error('Failed to parse SSE data:', e);
+      return;
+    }
+    onProgress(update);
+    if (update.stage === 'complete' && update.result) {
+      finalResult = update.result;
+    } else if (update.stage === 'error') {
+      throw new Error(update.message || 'Analysis failed');
+    }
+  };
 
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
+      lineBuffer += decoder.decode(value, { stream: true });
+      const lines = lineBuffer.split('\n');
+      lineBuffer = lines.pop() ?? '';
 
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          let update: ProgressUpdate | null = null;
-          try {
-            update = JSON.parse(data) as ProgressUpdate;
-          } catch (e) {
-            console.error('Failed to parse SSE data:', e);
-          }
-          if (update) {
-            onProgress(update);
-            if (update.stage === 'complete' && update.result) {
-              finalResult = update.result;
-            } else if (update.stage === 'error') {
-              throw new Error(update.message || 'Analysis failed');
-            }
-          }
-        }
+        processSseLine(line);
       }
+    }
+    if (lineBuffer) {
+      processSseLine(lineBuffer);
     }
   } finally {
     reader.releaseLock();
