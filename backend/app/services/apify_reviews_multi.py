@@ -27,16 +27,16 @@ class ApifyReviewsError(RuntimeError):
 
 
 _SUPPORTED_SOURCES = {"google", "yelp", "tripadvisor"}
-_THE_WOLVES_TRIPADVISOR_ACTOR = "thewolves/tripadvisor-reviews-scraper"
+_ZEBU_TRIPADVISOR_ACTOR = "delicious_zebu/tripadvisor-review-collector"
 
 
 def _normalize_actor_id(actor_id: str) -> str:
     return actor_id.strip().lower().replace("~", "/")
 
 
-def is_wolves_tripadvisor_actor(actor_id: str) -> bool:
-    """True when APIFY_TRIPADVISOR_ACTOR_ID targets The Wolves reviews scraper."""
-    return _normalize_actor_id(actor_id) == _THE_WOLVES_TRIPADVISOR_ACTOR
+def is_zebu_tripadvisor_actor(actor_id: str) -> bool:
+    """True when APIFY_TRIPADVISOR_ACTOR_ID targets delicious_zebu/tripadvisor-review-collector."""
+    return _normalize_actor_id(actor_id) == _ZEBU_TRIPADVISOR_ACTOR
 
 
 def per_source_review_limit(settings: Settings, source: str) -> int:
@@ -169,22 +169,23 @@ def _build_tripadvisor_actor_input(
     since: datetime | None,
     tripadvisor_url: str | None,
 ) -> dict:
-    """Build run input for maxcopell/tripadvisor-reviews or thewolves/tripadvisor-reviews-scraper."""
+    """Build run input for delicious_zebu collector or legacy maxcopell/tripadvisor-reviews."""
     limit = per_source_review_limit(settings, "tripadvisor")
     actor_id = settings.apify_tripadvisor_actor_id
 
-    if is_wolves_tripadvisor_actor(actor_id):
+    if is_zebu_tripadvisor_actor(actor_id):
         if not tripadvisor_url:
             raise ApifyReviewsError(
-                "TripAdvisor URL is required for thewolves/tripadvisor-reviews-scraper. "
+                "TripAdvisor URL is required for delicious_zebu/tripadvisor-review-collector. "
                 "Resolve the listing URL via search or discovery first."
             )
         payload: dict[str, Any] = {
-            "startUrls": [tripadvisor_url.strip()],
-            "maxItems": limit,
+            "detailUrls": [tripadvisor_url.strip()],
+            "maxReviews": limit,
+            "sortBy": "newest",
         }
         if since is not None:
-            payload["since"] = since.date().isoformat()
+            payload["startDate"] = since.date().isoformat()
         return payload
 
     payload: dict[str, Any] = {
@@ -358,7 +359,7 @@ def fetch_reviews_for_source(
                 continue
             if since is not None:
                 dt = _parse_iso_datetime(row.date_iso)
-                if dt is None or dt <= since:
+                if dt is not None and dt < since:
                     continue
             after_since_count += 1
             seen_keys.add(row.review_key)
@@ -456,7 +457,7 @@ async def fetch_reviews_for_source_async(
                 continue
             if since is not None:
                 dt = _parse_iso_datetime(row.date_iso)
-                if dt is None or dt <= since:
+                if dt is not None and dt < since:
                     continue
             after_since_count += 1
             seen_keys.add(row.review_key)

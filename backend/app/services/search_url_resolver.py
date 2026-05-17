@@ -10,6 +10,7 @@ from apify_client.errors import ApifyApiError
 from app.config import Settings
 from app.services.apify_async_io import iterate_dataset_items_locked
 from app.services.apify_runner import call_actor_async, call_actor_sync
+from app.services.tripadvisor_urls import is_tripadvisor_detail_page_url
 
 logger = logging.getLogger(__name__)
 
@@ -264,7 +265,7 @@ def resolve_tripadvisor_url_from_search(
     settings: Settings | None = None
 ) -> str | None:
     """
-    Search and find the first TripAdvisor URL that contains 'Restaurant_Review'.
+    Search and find the first TripAdvisor detail-page URL (restaurant, hotel, etc.).
     Uses Apify Google Search Scraper.
     """
     if settings is None:
@@ -290,28 +291,17 @@ def resolve_tripadvisor_url_from_search(
         logger.warning("TripAdvisor search returned no organicResults for query: %s", query)
         return None
 
-    # Find first URL that contains tripadvisor domain AND Restaurant_Review
     for result in organic_results:
         url = str(result.get("url") or "").strip()
         title = str(result.get("title") or "")
 
-        if not url:
-            continue
-
-        url_lower = url.lower()
-
-        # Check if URL contains tripadvisor domain
-        if "tripadvisor." not in url_lower:
-            continue
-
-        # Check if URL contains Restaurant_Review pattern
-        if "restaurant_review" not in url_lower:
+        if not url or not is_tripadvisor_detail_page_url(url):
             continue
 
         logger.info("TripAdvisor URL found: title=%s, url=%s", title, url)
         return url
 
-    logger.warning("No valid TripAdvisor Restaurant_Review URL found in search results for query: %s", query)
+    logger.warning("No valid TripAdvisor detail-page URL found in search results for query: %s", query)
     return None
 
 
@@ -404,13 +394,12 @@ async def resolve_tripadvisor_url_from_search_async(
         title = str(result.get("title") or "")
         if not url:
             continue
-        url_lower = url.lower()
-        if "tripadvisor." not in url_lower or "restaurant_review" not in url_lower:
+        if not is_tripadvisor_detail_page_url(url):
             continue
         logger.info("TripAdvisor URL found (async): title=%s, url=%s", title, url)
         return url
 
-    logger.warning("No valid TripAdvisor Restaurant_Review URL found (async) for query: %s", query)
+    logger.warning("No valid TripAdvisor detail-page URL found (async) for query: %s", query)
     return None
 
 

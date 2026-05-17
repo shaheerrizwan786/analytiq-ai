@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     apify_google_actor_id: str = "compass/crawler-google-places"
     apify_google_reviews_actor_id: str = "compass/Google-Maps-Reviews-Scraper"
     apify_yelp_actor_id: str = "voyager/yelp-review-scraper"
-    apify_tripadvisor_actor_id: str = "maxcopell/tripadvisor-reviews"
+    apify_tripadvisor_actor_id: str = "delicious_zebu/tripadvisor-review-collector"
 
     # Discovery actors (resolve URL from name + location)
     apify_google_search_actor_id: str = "apify/google-search-scraper"

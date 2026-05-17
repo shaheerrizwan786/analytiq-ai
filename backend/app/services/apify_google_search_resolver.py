@@ -6,6 +6,7 @@ from apify_client import ApifyClient
 
 from app.config import get_settings
 from app.services.apify_runner import call_actor_sync
+from app.services.tripadvisor_urls import is_tripadvisor_detail_page_url
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ def resolve_tripadvisor_url_from_apify_search(
             organic_results = item.get("organicResults", [])
             for result in organic_results:
                 url = result.get("url", "")
-                if "tripadvisor.com" in url.lower() and ("Restaurant_Review" in url or "/Restaurant_Review-" in url):
+                if is_tripadvisor_detail_page_url(url):
                     logger.info(f"Found Tripadvisor URL: {url}")
                     return url
 

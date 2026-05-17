@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import RestaurantAutocomplete from '@/components/ui/RestaurantAutocomplete';
 import AppShell from '@/components/layout/AppShell';
 import DashboardView, { DashboardData } from '@/components/dashboard/DashboardView';
@@ -451,8 +450,13 @@ function AnalyzeForm({
                     label="Restaurant Name"
                     placeholder="e.g. The Meridian Kitchen"
                     value={name}
+                    variant="name"
+                    dropdownDirection="up"
                     contextQuery={location.trim()}
-                    onChange={(val) => { setName(val); setPlaceId(undefined); }}
+                    onChange={(val) => {
+                      setName(val);
+                      setPlaceId(undefined);
+                    }}
                     onPlaceSelect={(details) => {
                       setName(details.name);
                       if (details.formatted_address) setLocation(details.formatted_address);
@@ -460,11 +464,22 @@ function AnalyzeForm({
                     }}
                     isDisabled={isLoading}
                   />
-                  <Input
+                  <RestaurantAutocomplete
                     label="Location"
                     placeholder="e.g. Clayton, VIC"
                     value={location}
-                    onChange={setLocation}
+                    variant="location"
+                    dropdownDirection="down"
+                    contextQuery={name.trim()}
+                    onChange={(val) => {
+                      setLocation(val);
+                      setPlaceId(undefined);
+                    }}
+                    onPlaceSelect={(details) => {
+                      setName(details.name);
+                      if (details.formatted_address) setLocation(details.formatted_address);
+                      setPlaceId(details.place_id);
+                    }}
                     isDisabled={isLoading}
                   />
                   <div className="pt-2">

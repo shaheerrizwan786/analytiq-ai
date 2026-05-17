@@ -25,8 +25,12 @@ interface RestaurantAutocompleteProps {
   isDisabled?: boolean;
   label?: string;
   placeholder?: string;
+  /** Other field (name or location) — combined with current input for search */
   contextQuery?: string;
+  /** Dropdown opens above or below the input */
   dropdownDirection?: 'up' | 'down';
+  /** Which part of a suggestion fills this input on select */
+  variant?: 'name' | 'location';
 }
 
 export default function RestaurantAutocomplete({
@@ -38,6 +42,7 @@ export default function RestaurantAutocomplete({
   placeholder = 'e.g. Starbucks, McDonald\'s',
   contextQuery = '',
   dropdownDirection = 'down',
+  variant = 'name',
 }: RestaurantAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,12 +51,10 @@ export default function RestaurantAutocomplete({
   const [isFocused, setIsFocused] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const apiKey = process.env.NEXT_PUBLIC_INTERNAL_API_KEY ?? '';
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -62,9 +65,7 @@ export default function RestaurantAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch suggestions when user types
   useEffect(() => {
-    // Only show suggestions when input is focused
     if (!isFocused) {
       setSuggestions([]);
       setShowDropdown(false);
@@ -94,13 +95,14 @@ export default function RestaurantAutocomplete({
 
         const response = await fetch(
           `${apiBase}/places/autocomplete?input=${encodeURIComponent(searchQuery)}`,
-          { headers }
+          { headers },
         );
         if (response.ok) {
           const data = await response.json();
           const preds = data.predictions || [];
           setSuggestions(preds);
           setShowDropdown(preds.length > 0);
+          setSelectedIndex(-1);
           setFetchError(false);
         } else {
           setSuggestions([]);
@@ -117,17 +119,28 @@ export default function RestaurantAutocomplete({
     }, 250);
 
     return () => clearTimeout(timer);
-  }, [value, contextQuery, isFocused]);
+  }, [value, contextQuery, isFocused, apiBase, apiKey]);
 
   function handleSelectPlace(placeId: string, description: string) {
     setShowDropdown(false);
     setSuggestions([]);
     setFetchError(false);
 
-    const mainText = description.split(',')[0].trim();
-    const addressParts = description.split(',').slice(1).map(s => s.trim()).join(', ');
+    const mainText =
+      description.split(',')[0]?.trim() || description.trim();
+    const addressParts = description
+      .split(',')
+      .slice(1)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(', ');
 
-    onChange(mainText);
+    const fieldValue =
+      variant === 'location'
+        ? addressParts || description
+        : mainText;
+
+    onChange(fieldValue);
     onPlaceSelect?.({
       place_id: placeId,
       name: mainText,
@@ -154,6 +167,47 @@ export default function RestaurantAutocomplete({
     }
   }
 
+  const dropdownList =
+    showDropdown && suggestions.length > 0 ? (
+      <div
+        className={`absolute z-50 w-full bg-white dark:bg-[var(--dk-alt)] border border-gray-200 dark:border-[var(--dk-border)] rounded-lg shadow-lg max-h-60 overflow-y-auto ${
+          dropdownDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'
+        }`}
+      >
+        {suggestions.map((suggestion, index) => {
+          const mainText =
+            suggestion.structured_formatting?.main_text ||
+            suggestion.description.split(',')[0];
+          const secondaryText =
+            suggestion.structured_formatting?.secondary_text ||
+            suggestion.description.split(',').slice(1).join(',').trim();
+
+          return (
+            <button
+              type="button"
+              key={suggestion.place_id}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() =>
+                handleSelectPlace(suggestion.place_id, suggestion.description)
+              }
+              className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-[var(--dk-tint)] transition-colors border-b border-gray-100 dark:border-[var(--dk-border)] last:border-b-0 ${
+                index === selectedIndex ? 'bg-gray-50 dark:bg-[var(--dk-tint)]' : ''
+              }`}
+            >
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {mainText}
+              </div>
+              {secondaryText && (
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {secondaryText}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    ) : null;
+
   return (
     <div ref={wrapperRef} className="relative">
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
@@ -161,14 +215,12 @@ export default function RestaurantAutocomplete({
       </label>
       <div className="relative">
         <input
-          ref={inputRef}
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => setIsFocused(true)}
           onBlur={() => {
-            // Delay so mousedown on a suggestion can fire first (mobile/desktop)
             setTimeout(() => setIsFocused(false), 300);
           }}
           disabled={isDisabled}
@@ -176,12 +228,13 @@ export default function RestaurantAutocomplete({
           className="w-full px-4 py-2.5 text-sm bg-white dark:bg-[var(--dk-alt)] border border-gray-200 dark:border-[var(--dk-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)] dark:focus:ring-[var(--dk-accent)] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
         />
         {isLoading && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
             <svg
               className="animate-spin h-4 w-4 text-gray-400"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <circle
                 className="opacity-25"
@@ -199,42 +252,13 @@ export default function RestaurantAutocomplete({
             </svg>
           </div>
         )}
+        {dropdownList}
       </div>
 
       {fetchError && isFocused && value.trim().length >= 1 && !isLoading && (
         <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
           Suggestions unavailable — you can still enter the name and location manually.
         </p>
-      )}
-
-      {showDropdown && suggestions.length > 0 && (
-        <div className={`absolute z-50 w-full ${dropdownDirection === 'up' ? 'bottom-full mb-1' : 'mt-1'} bg-white dark:bg-[var(--dk-alt)] border border-gray-200 dark:border-[var(--dk-border)] rounded-lg shadow-lg max-h-60 overflow-y-auto`}>
-          {suggestions.map((suggestion, index) => {
-            const mainText = suggestion.structured_formatting?.main_text || suggestion.description.split(',')[0];
-            const secondaryText = suggestion.structured_formatting?.secondary_text || suggestion.description.split(',').slice(1).join(',').trim();
-
-            return (
-              <button
-                type="button"
-                key={suggestion.place_id}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleSelectPlace(suggestion.place_id, suggestion.description)}
-                className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-[var(--dk-tint)] transition-colors border-b border-gray-100 dark:border-[var(--dk-border)] last:border-b-0 ${
-                  index === selectedIndex ? 'bg-gray-50 dark:bg-[var(--dk-tint)]' : ''
-                }`}
-              >
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {mainText}
-                </div>
-                {secondaryText && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {secondaryText}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
       )}
     </div>
   );
