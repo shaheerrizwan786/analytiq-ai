@@ -13,6 +13,7 @@ export interface AnalyzeResponse {
   status: string;
   restaurant_name: string;
   restaurant_location: string;
+  google_place_id?: string | null;
   insights: {
     sentiment: { positive: number; neutral: number; negative: number };
     top_issues: string[];
@@ -61,7 +62,7 @@ export async function analyzeRestaurant(
 }
 
 export interface ProgressUpdate {
-  stage: 'google' | 'tripadvisor' | 'yelp' | 'insights' | 'complete' | 'error';
+  stage: 'google' | 'tripadvisor' | 'yelp' | 'insights' | 'complete' | 'error' | 'sync' | 'queued';
   status: 'started' | 'completed' | 'failed' | 'skipped' | 'success';
   message?: string;
   result?: AnalyzeResponse;
@@ -81,7 +82,10 @@ export async function analyzeRestaurantStream(
 
   const res = await fetch(`${API_BASE}/api/v1/restaurants/analyze/stream`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': process.env.NEXT_PUBLIC_INTERNAL_API_KEY ?? '',
+    },
     body: JSON.stringify(body),
   });
 

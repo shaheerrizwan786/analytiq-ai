@@ -105,6 +105,7 @@ function mapToUi(api: AnalyzeResponse, name: string, location: string): Dashboar
   return {
     restaurantName: api.restaurant_name ?? name,
     location: api.restaurant_location ?? location,
+    googlePlaceId: api.google_place_id ?? undefined,
     totalReviews,
     sentiment,
     strengths,
@@ -198,7 +199,7 @@ function LandingPage({
 
           {/* Subtext */}
           <p className="mt-6 text-base sm:text-lg text-gray-400 max-w-xl mx-auto leading-relaxed">
-            Analytiq aggregates reviews from Google and TripAdvisor &mdash; then surfaces
+            Analytiq aggregates reviews from Google, TripAdvisor, and Yelp &mdash; then surfaces
             exactly what to fix and what to celebrate.
           </p>
 
@@ -268,6 +269,8 @@ function AnalyzeForm({
   const [stageMessages, setStageMessages] = useState<Record<ProgressStage, string>>({
     google: '', tripadvisor: '', yelp: '', insights: '', complete: '',
   });
+  const [syncBanner, setSyncBanner] = useState<string | null>(null);
+  const [queueBanner, setQueueBanner] = useState<string | null>(null);
 
   const canSubmit = name.trim().length > 0 && location.trim().length > 0;
 
@@ -336,6 +339,8 @@ function AnalyzeForm({
     setCurrentStage('google');
     setStageStatuses({ google: 'pending', tripadvisor: 'pending', yelp: 'pending', insights: 'pending', complete: 'pending' });
     setStageMessages({ google: '', tripadvisor: '', yelp: '', insights: '', complete: '' });
+    setSyncBanner(null);
+    setQueueBanner(null);
     try {
       if (isDemoRestaurant(name.trim(), location.trim())) {
         await runDemoAnimation();
@@ -348,6 +353,18 @@ function AnalyzeForm({
         placeId ? { place_id: placeId } : undefined,
         (update) => {
           if (update.stage === 'error') return;
+          if (update.stage === 'queued' && update.message) {
+            setQueueBanner(update.message);
+            return;
+          }
+          if (update.stage === 'sync' && update.message) {
+            setSyncBanner(update.message);
+            setQueueBanner(null);
+            return;
+          }
+          if (update.stage !== 'queued') {
+            setQueueBanner(null);
+          }
           const stage = update.stage as ProgressStage;
           setCurrentStage(stage);
           setStageStatuses((prev) => ({ ...prev, [stage]: update.status }));
@@ -366,8 +383,8 @@ function AnalyzeForm({
   }
 
   return (
-    <AppShell>
-      <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center relative overflow-hidden">
+    <AppShell mainClassName="flex-1 flex w-full max-w-none mx-0 px-0 py-0 min-h-0">
+      <div className="w-full min-h-[calc(100vh-3.5rem)] flex flex-1 items-center justify-center relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="animate-float-blob absolute -top-32 -left-32 w-96 h-96 rounded-full bg-violet-500/20 dark:bg-violet-600/15 blur-3xl" />
           <div className="animate-float-blob-delay absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-cyan-400/20 dark:bg-cyan-500/10 blur-3xl" />
@@ -385,7 +402,7 @@ function AnalyzeForm({
           <div className="flex justify-center mb-6">
             <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-[#13131F]/80 backdrop-blur-sm border border-gray-100 dark:border-[#1E1E2E] rounded-full px-3 py-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Analysing reviews from Google &middot; TripAdvisor
+              Analysing reviews from Google &middot; TripAdvisor &middot; Yelp
             </div>
           </div>
 
@@ -395,6 +412,16 @@ function AnalyzeForm({
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Fetching reviews…</h2>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">This usually takes 1–2 minutes.</p>
+                  {queueBanner && (
+                    <p className="mt-2 text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-lg px-3 py-2">
+                      {queueBanner}
+                    </p>
+                  )}
+                  {syncBanner && (
+                    <p className="mt-2 text-sm text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900/50 rounded-lg px-3 py-2">
+                      {syncBanner}
+                    </p>
+                  )}
                 </div>
                 <AnalysisProgressBar
                   currentStage={currentStage}
@@ -424,6 +451,7 @@ function AnalyzeForm({
                     label="Restaurant Name"
                     placeholder="e.g. The Meridian Kitchen"
                     value={name}
+                    contextQuery={location.trim()}
                     onChange={(val) => { setName(val); setPlaceId(undefined); }}
                     onPlaceSelect={(details) => {
                       setName(details.name);

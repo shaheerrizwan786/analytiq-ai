@@ -10,6 +10,7 @@ from apify_client.errors import ApifyApiError
 
 from app.config import Settings
 from app.services.apify_async_io import iterate_dataset_items_locked
+from app.services.apify_runner import call_review_actor_async, call_review_actor_sync
 
 
 @dataclass(frozen=True)
@@ -26,6 +27,16 @@ class ApifyReviewsError(RuntimeError):
 
 
 _SUPPORTED_SOURCES = {"google", "yelp", "tripadvisor"}
+_THE_WOLVES_TRIPADVISOR_ACTOR = "thewolves/tripadvisor-reviews-scraper"
+
+
+def _normalize_actor_id(actor_id: str) -> str:
+    return actor_id.strip().lower().replace("~", "/")
+
+
+def is_wolves_tripadvisor_actor(actor_id: str) -> bool:
+    """True when APIFY_TRIPADVISOR_ACTOR_ID targets The Wolves reviews scraper."""
+    return _normalize_actor_id(actor_id) == _THE_WOLVES_TRIPADVISOR_ACTOR
 
 
 def per_source_review_limit(settings: Settings, source: str) -> int:
@@ -141,7 +152,42 @@ def _build_actor_input(
             payload["dateFrom"] = since.date().isoformat()
         return payload
 
-    payload = {
+    return _build_tripadvisor_actor_input(
+        settings,
+        name=name,
+        location=location,
+        since=since,
+        tripadvisor_url=tripadvisor_url,
+    )
+
+
+def _build_tripadvisor_actor_input(
+    settings: Settings,
+    *,
+    name: str,
+    location: str,
+    since: datetime | None,
+    tripadvisor_url: str | None,
+) -> dict:
+    """Build run input for maxcopell/tripadvisor-reviews or thewolves/tripadvisor-reviews-scraper."""
+    limit = per_source_review_limit(settings, "tripadvisor")
+    actor_id = settings.apify_tripadvisor_actor_id
+
+    if is_wolves_tripadvisor_actor(actor_id):
+        if not tripadvisor_url:
+            raise ApifyReviewsError(
+                "TripAdvisor URL is required for thewolves/tripadvisor-reviews-scraper. "
+                "Resolve the listing URL via search or discovery first."
+            )
+        payload: dict[str, Any] = {
+            "startUrls": [tripadvisor_url.strip()],
+            "maxItems": limit,
+        }
+        if since is not None:
+            payload["since"] = since.date().isoformat()
+        return payload
+
+    payload: dict[str, Any] = {
         "maxItemsPerQuery": limit,
         "scrapeReviewerInfo": True,
         "reviewRatings": ["ALL_REVIEW_RATINGS"],
@@ -167,7 +213,15 @@ def _normalize_from_item(source: str, item: dict, include_empty: bool = False) -
         date_iso = _to_str(
             _pick_first(
                 item,
-                ["publishedAtDate", "publishedAt", "publishedDate", "date", "reviewDate", "createdAt"],
+                [
+                    "publishedAtDate",
+                    "publishedAt",
+                    "publishedDate",
+                    "createdDate",
+                    "date",
+                    "reviewDate",
+                    "createdAt",
+                ],
             )
         )
         external_id = _to_str(_pick_first(item, ["reviewId", "id", "review_id", "uuid"]))
@@ -199,7 +253,15 @@ def _normalize_from_item(source: str, item: dict, include_empty: bool = False) -
             date_iso = _to_str(
                 _pick_first(
                     raw,
-                    ["publishedAtDate", "publishedAt", "publishedDate", "date", "reviewDate", "createdAt"],
+                    [
+                    "publishedAtDate",
+                    "publishedAt",
+                    "publishedDate",
+                    "createdDate",
+                    "date",
+                    "reviewDate",
+                    "createdAt",
+                ],
                 )
             )
             external_id = _to_str(_pick_first(raw, ["reviewId", "id", "review_id", "uuid"]))
@@ -259,7 +321,9 @@ def fetch_reviews_for_source(
     logger.info(f"[{source}] Running actor {actor_id} with input: {run_input}")
 
     try:
-        run = client.actor(actor_id).call(run_input=run_input, wait_secs=settings.apify_wait_secs)
+        run = call_review_actor_sync(
+            client, actor_id, settings=settings, source=source, run_input=run_input
+        )
     except ApifyApiError as e:
         raise ApifyReviewsError(str(e)) from e
 
@@ -356,7 +420,9 @@ async def fetch_reviews_for_source_async(
     logger.info("[%s] Running actor %s (async) with input: %s", source, actor_id, run_input)
 
     try:
-        run = await client.actor(actor_id).call(run_input=run_input, wait_secs=settings.apify_wait_secs)
+        run = await call_review_actor_async(
+            client, actor_id, settings=settings, source=source, run_input=run_input
+        )
     except ApifyApiError as e:
         raise ApifyReviewsError(str(e)) from e
 

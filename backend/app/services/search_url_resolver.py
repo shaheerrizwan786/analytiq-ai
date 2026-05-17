@@ -9,6 +9,7 @@ from apify_client.errors import ApifyApiError
 
 from app.config import Settings
 from app.services.apify_async_io import iterate_dataset_items_locked
+from app.services.apify_runner import call_actor_async, call_actor_sync
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,11 @@ def _search_with_google(settings: Settings, query: str, max_results: int = 10) -
 
     try:
         logger.info(f"Starting Google Search actor for query: {query}")
-        run = client.actor(settings.apify_google_search_actor_id).call(
+        run = call_actor_sync(
+            client,
+            settings.apify_google_search_actor_id,
+            settings=settings,
+            profile="google_search",
             run_input=run_input,
             timeout_secs=60,
         )
@@ -100,7 +105,11 @@ async def _search_with_google_async(settings: Settings, query: str, max_results:
     }
     try:
         logger.info("Starting Google Search actor (async) for query: %s", query)
-        run = await client.actor(settings.apify_google_search_actor_id).call(
+        run = await call_actor_async(
+            client,
+            settings.apify_google_search_actor_id,
+            settings=settings,
+            profile="google_search",
             run_input=run_input,
             timeout_secs=60,
         )

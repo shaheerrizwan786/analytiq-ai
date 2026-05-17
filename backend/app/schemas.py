@@ -72,11 +72,23 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=200, description="Restaurant name")
     location: str = Field(..., min_length=1, max_length=200, description="City / region")
+    google_place_id: str | None = Field(
+        None,
+        max_length=200,
+        description="Google Place ID from autocomplete or last analyze (optional)",
+    )
     message: str = Field(..., min_length=1, max_length=4000, description="The user's latest message")
     history: list[ChatMessage] = Field(default_factory=list, description="Prior turns", max_length=50)
     # Optional pre-computed insights to enrich the context (passed by frontend from last analyze result)
     top_issues: list[str] = Field(default_factory=list)
     recommendations: list[str] = Field(default_factory=list)
+
+    @field_validator("google_place_id")
+    @classmethod
+    def validate_chat_place_id(cls, v: str | None) -> str | None:
+        if v is not None and not re.fullmatch(r"[A-Za-z0-9_\-]+", v):
+            raise ValueError("Invalid Google Place ID format")
+        return v
 
 
 class ChatResponse(BaseModel):
@@ -110,6 +122,10 @@ class AnalyzeResponse(BaseModel):
     new_reviews_count: int = Field(
         default=0,
         description="Count of newly persisted reviews in this run.",
+    )
+    google_place_id: str | None = Field(
+        default=None,
+        description="Resolved or submitted Google Place ID used for review sync key.",
     )
 
 

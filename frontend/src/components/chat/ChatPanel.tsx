@@ -20,6 +20,7 @@ interface ChatPanelProps {
   onClose: () => void;
   restaurantName: string;
   location: string;
+  googlePlaceId?: string;
   topIssues?: string[];
   recommendations?: string[];
   /** 'drawer' = fixed overlay with backdrop (default, used on mobile)
@@ -88,6 +89,19 @@ function renderInline(text: string): React.ReactNode {
   );
 }
 
+function ClosePanelButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[var(--dk-tint)] transition-colors shrink-0"
+      aria-label="Close chat panel"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  );
+}
+
 // ── ConversationList ─────────────────────────────────────────────────────────
 
 function ConversationList({
@@ -97,6 +111,7 @@ function ConversationList({
   onDelete,
   onArchive,
   onUnarchive,
+  onClose,
 }: {
   convos: Conversation[];
   onSelect: (id: string) => void;
@@ -104,6 +119,7 @@ function ConversationList({
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
   onUnarchive: (id: string) => void;
+  onClose?: () => void;
 }) {
   const [menuId, setMenuId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -115,18 +131,22 @@ function ConversationList({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-[var(--dk-border)]">
-        <div>
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-[var(--dk-border)]">
+        <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 dark:text-white">AI Advisor</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Ask anything about your reviews</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Ask anything about your reviews</p>
         </div>
-        <button
-          onClick={onNew}
-          className="flex items-center gap-1 text-xs font-medium bg-[var(--accent)] hover:bg-[var(--accent-2)] text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-          New chat
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={onNew}
+            className="flex items-center gap-1 text-xs font-medium bg-[var(--accent)] hover:bg-[var(--accent-2)] text-white px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors shadow-sm whitespace-nowrap"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            New chat
+          </button>
+          {onClose ? <ClosePanelButton onClick={onClose} /> : null}
+        </div>
       </div>
 
       {/* Tab toggle */}
@@ -234,16 +254,20 @@ function ActiveChat({
   onNewMessage,
   restaurantName,
   location,
+  googlePlaceId,
   topIssues,
   recommendations,
+  onClose,
 }: {
   conversation: Conversation;
   onBack: () => void;
   onNewMessage: () => void;
   restaurantName: string;
   location: string;
+  googlePlaceId?: string;
   topIssues: string[];
   recommendations: string[];
+  onClose?: () => void;
 }) {
   const [messages, setMessages] = useState<ChatMsg[]>(conversation.messages);
   const [title, setTitle] = useState(conversation.title);
@@ -294,6 +318,7 @@ function ActiveChat({
         body: JSON.stringify({
           name: restaurantName,
           location,
+          ...(googlePlaceId ? { google_place_id: googlePlaceId } : {}),
           message: trimmed,
           history,
           top_issues: topIssues,
@@ -316,7 +341,7 @@ function ActiveChat({
       onNewMessage();
       inputRef.current?.focus({ preventScroll: true });
     }
-  }, [loading, messages, conversation.id, restaurantName, location, topIssues, recommendations, onNewMessage]);
+  }, [loading, messages, conversation.id, restaurantName, location, googlePlaceId, topIssues, recommendations, onNewMessage]);
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -338,8 +363,9 @@ function ActiveChat({
         </button>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{title}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{restaurantName}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{restaurantName}</p>
         </div>
+        {onClose ? <ClosePanelButton onClick={onClose} /> : null}
       </div>
 
       {/* Messages */}
@@ -434,6 +460,7 @@ function ChatPanelContent({
   onClose,
   restaurantName,
   location,
+  googlePlaceId,
   topIssues,
   recommendations,
   showCloseButton,
@@ -442,6 +469,7 @@ function ChatPanelContent({
   onClose: () => void;
   restaurantName: string;
   location: string;
+  googlePlaceId?: string;
   topIssues: string[];
   recommendations: string[];
   showCloseButton: boolean;
@@ -471,19 +499,11 @@ function ChatPanelContent({
   }, [refresh]);
 
   const activeConvo = convos.find((c) => c.id === activeId) ?? null;
+  const panelClose = showCloseButton ? onClose : undefined;
 
   return (
-    <div className="flex flex-col h-full relative">
-      {showCloseButton && (
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[var(--dk-border)] transition-colors z-10"
-          aria-label="Close chat panel"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      )}
-      <div className="flex-1 overflow-hidden">
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-hidden min-h-0">
         {activeConvo ? (
           <ActiveChat
             conversation={activeConvo}
@@ -491,8 +511,10 @@ function ChatPanelContent({
             onNewMessage={refresh}
             restaurantName={restaurantName}
             location={location}
+            googlePlaceId={googlePlaceId}
             topIssues={topIssues}
             recommendations={recommendations}
+            onClose={panelClose}
           />
         ) : (
           <ConversationList
@@ -502,6 +524,7 @@ function ChatPanelContent({
             onDelete={refresh}
             onArchive={refresh}
             onUnarchive={refresh}
+            onClose={panelClose}
           />
         )}
       </div>
@@ -516,6 +539,7 @@ export default function ChatPanel({
   onClose,
   restaurantName,
   location,
+  googlePlaceId,
   topIssues = [],
   recommendations = [],
   variant = 'drawer',
@@ -529,6 +553,7 @@ export default function ChatPanel({
           onClose={onClose}
           restaurantName={restaurantName}
           location={location}
+          googlePlaceId={googlePlaceId}
           topIssues={topIssues}
           recommendations={recommendations}
           showCloseButton={false}
@@ -557,6 +582,7 @@ export default function ChatPanel({
           onClose={onClose}
           restaurantName={restaurantName}
           location={location}
+          googlePlaceId={googlePlaceId}
           topIssues={topIssues}
           recommendations={recommendations}
           showCloseButton={true}

@@ -5,6 +5,8 @@ import logging
 from typing import List, Dict, Optional
 import googlemaps
 from apify_client import ApifyClient
+
+from app.services.apify_runner import call_actor_sync
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -22,8 +24,18 @@ class GooglePlacesService:
         self.settings = settings
 
     _FOOD_TYPES = {
-        "restaurant", "food", "cafe", "bar", "bakery",
-        "meal_takeaway", "meal_delivery", "night_club",
+        "restaurant",
+        "food",
+        "cafe",
+        "bar",
+        "bakery",
+        "meal_takeaway",
+        "meal_delivery",
+        "night_club",
+        "coffee_shop",
+        "pub",
+        "ice_cream_shop",
+        "sandwich_shop",
     }
 
     def autocomplete_place_predictions(
@@ -83,11 +95,16 @@ class GooglePlacesService:
             components: Country restrictions (e.g., {'country': ['au']})
 
         Returns:
-            List of place predictions filtered to food/dining establishments.
+            List of place predictions (food/dining first; broader fallback if none).
         """
-        return self.autocomplete_place_predictions(
+        preds = self.autocomplete_place_predictions(
             input_text, types=types, components=components, food_only=True
         )
+        if not preds:
+            preds = self.autocomplete_place_predictions(
+                input_text, types=types, components=components, food_only=False
+            )
+        return preds
 
     def resolve_first_place_id_for_restaurant(
         self,
@@ -137,9 +154,13 @@ class GooglePlacesService:
                 }
 
                 items: list = []
-                run = self.apify_client.actor(self.settings.apify_google_actor_id).call(
+                run = call_actor_sync(
+                    self.apify_client,
+                    self.settings.apify_google_actor_id,
+                    settings=self.settings,
+                    profile="google_places_crawl",
                     run_input=run_input,
-                    wait_secs=30
+                    wait_secs=30,
                 )
 
                 if run and run.get("defaultDatasetId"):

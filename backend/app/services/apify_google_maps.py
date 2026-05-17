@@ -14,6 +14,7 @@ from apify_client import ApifyClient
 from apify_client.errors import ApifyApiError
 
 from app.config import Settings
+from app.services.apify_runner import call_actor_sync
 
 
 @dataclass(frozen=True)
@@ -145,7 +146,11 @@ def fetch_google_reviews(
     )
 
     try:
-        run = client.actor(settings.apify_google_actor_id).call(
+        run = call_actor_sync(
+            client,
+            settings.apify_google_actor_id,
+            settings=settings,
+            profile="google_places_crawl",
             run_input=run_input,
             wait_secs=settings.apify_wait_secs,
         )
@@ -159,7 +164,11 @@ def fetch_google_reviews(
                 since=None,
             )
             try:
-                run = client.actor(settings.apify_google_actor_id).call(
+                run = call_actor_sync(
+                    client,
+                    settings.apify_google_actor_id,
+                    settings=settings,
+                    profile="google_places_crawl",
                     run_input=fallback_input,
                     wait_secs=settings.apify_wait_secs,
                 )

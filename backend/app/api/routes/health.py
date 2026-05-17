@@ -3,6 +3,7 @@ import os
 from fastapi import APIRouter
 
 from app.config import get_settings
+from app.services.apify_capacity_pool import get_apify_capacity_pool
 
 router = APIRouter(tags=["health"])
 
@@ -10,6 +11,12 @@ router = APIRouter(tags=["health"])
 @router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@router.get("/health/capacity")
+def capacity() -> dict:
+    """Concurrent analyses vs Apify Cloud memory budget (not Railway RAM)."""
+    return get_apify_capacity_pool().stats()
 
 
 @router.get("/health/env-check")

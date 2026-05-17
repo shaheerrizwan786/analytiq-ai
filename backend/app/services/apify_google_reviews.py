@@ -17,6 +17,7 @@ from apify_client.errors import ApifyApiError
 
 from app.config import Settings
 from app.services.apify_async_io import iterate_dataset_items_locked
+from app.services.apify_runner import call_actor_async, call_actor_sync
 
 
 @dataclass(frozen=True)
@@ -151,8 +152,13 @@ def _extract_place_url_from_crawler(
     place_id = None
 
     try:
-        run = client.actor(settings.apify_google_actor_id).call(
-            run_input=run_input, wait_secs=settings.apify_wait_secs
+        run = call_actor_sync(
+            client,
+            settings.apify_google_actor_id,
+            settings=settings,
+            profile="google_places_crawl",
+            run_input=run_input,
+            wait_secs=settings.apify_wait_secs,
         )
     except ApifyApiError as e:
         raise GoogleReviewsError(f"Stage 1 crawler failed: {str(e)}") from e
@@ -176,8 +182,13 @@ def _extract_place_url_from_crawler(
         run_input["searchStringsArray"] = [restaurant_name.strip()]
         run_input["locationQuery"] = city_location.strip()
         try:
-            run = client.actor(settings.apify_google_actor_id).call(
-                run_input=run_input, wait_secs=settings.apify_wait_secs
+            run = call_actor_sync(
+                client,
+                settings.apify_google_actor_id,
+                settings=settings,
+                profile="google_places_crawl",
+                run_input=run_input,
+                wait_secs=settings.apify_wait_secs,
             )
             if run and run.get("defaultDatasetId"):
                 dataset_id = run["defaultDatasetId"]
@@ -222,8 +233,13 @@ def _extract_detailed_reviews(
         run_input["reviewsStartDate"] = since.date().isoformat()
 
     try:
-        run = client.actor(settings.apify_google_reviews_actor_id).call(
-            run_input=run_input, wait_secs=settings.apify_wait_secs
+        run = call_actor_sync(
+            client,
+            settings.apify_google_reviews_actor_id,
+            settings=settings,
+            profile="google_maps_reviews",
+            run_input=run_input,
+            wait_secs=settings.apify_wait_secs,
         )
     except ApifyApiError as e:
         raise GoogleReviewsError(f"Stage 2 reviews scraper failed: {str(e)}") from e
@@ -335,8 +351,13 @@ async def _extract_place_url_from_crawler_async(
     dataset_url: str | None = None
 
     try:
-        run = await client.actor(settings.apify_google_actor_id).call(
-            run_input=run_input, wait_secs=settings.apify_wait_secs
+        run = await call_actor_async(
+            client,
+            settings.apify_google_actor_id,
+            settings=settings,
+            profile="google_places_crawl",
+            run_input=run_input,
+            wait_secs=settings.apify_wait_secs,
         )
     except ApifyApiError as e:
         raise GoogleReviewsError(f"Stage 1 crawler failed: {str(e)}") from e
@@ -359,8 +380,13 @@ async def _extract_place_url_from_crawler_async(
         run_input["searchStringsArray"] = [restaurant_name.strip()]
         run_input["locationQuery"] = city_location.strip()
         try:
-            run = await client.actor(settings.apify_google_actor_id).call(
-                run_input=run_input, wait_secs=settings.apify_wait_secs
+            run = await call_actor_async(
+                client,
+                settings.apify_google_actor_id,
+                settings=settings,
+                profile="google_places_crawl",
+                run_input=run_input,
+                wait_secs=settings.apify_wait_secs,
             )
             if run and run.get("defaultDatasetId"):
                 dataset_id = run["defaultDatasetId"]
@@ -400,8 +426,13 @@ async def _extract_detailed_reviews_async(
         run_input["reviewsStartDate"] = since.date().isoformat()
 
     try:
-        run = await client.actor(settings.apify_google_reviews_actor_id).call(
-            run_input=run_input, wait_secs=settings.apify_wait_secs
+        run = await call_actor_async(
+            client,
+            settings.apify_google_reviews_actor_id,
+            settings=settings,
+            profile="google_maps_reviews",
+            run_input=run_input,
+            wait_secs=settings.apify_wait_secs,
         )
     except ApifyApiError as e:
         raise GoogleReviewsError(f"Stage 2 reviews scraper failed: {str(e)}") from e

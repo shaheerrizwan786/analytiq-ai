@@ -5,6 +5,7 @@ from app.api.dependencies import limiter, verify_api_key
 from app.config import get_settings
 from app.schemas import ChatRequest, ChatResponse
 from app.services.chat_service import chat as llm_chat
+from app.services.restaurant_identity import prepare_restaurant_identity
 from app.services.review_sync_store import create_default_sync_store
 
 router = APIRouter(prefix="/api/v1", tags=["chat"])
@@ -82,12 +83,14 @@ def restaurant_chat(request: Request, body: ChatRequest, _: None = Depends(verif
         reply = _demo_chat(body.name, body.message, body.top_issues, body.recommendations)
         return ChatResponse(reply=reply, fallback=False)
 
-    # Load stored reviews to give LLM context
     sync_store = create_default_sync_store()
-    reviews = sync_store.get_all_reviews(
-        restaurant_name=body.name.strip(),
-        restaurant_location=body.location.strip(),
+    restaurant, _resolved = prepare_restaurant_identity(
+        sync_store,
+        body.name.strip(),
+        body.location.strip(),
+        body.google_place_id,
     )
+    reviews = sync_store.get_all_reviews(restaurant_key=restaurant.key)
 
     history = [{"role": m.role, "content": m.content} for m in body.history]
 

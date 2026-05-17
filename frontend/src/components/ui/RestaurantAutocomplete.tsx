@@ -44,8 +44,12 @@ export default function RestaurantAutocomplete({
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const apiKey = process.env.NEXT_PUBLIC_INTERNAL_API_KEY ?? '';
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -68,33 +72,49 @@ export default function RestaurantAutocomplete({
     }
 
     const trimmed = value.trim();
-    if (trimmed.length < 2) {
+    if (trimmed.length < 1) {
       setSuggestions([]);
       setShowDropdown(false);
+      setFetchError(false);
       return;
     }
 
     const timer = setTimeout(async () => {
       setIsLoading(true);
+      setFetchError(false);
       try {
         const searchQuery = contextQuery
           ? `${trimmed} ${contextQuery}`.trim()
           : trimmed;
 
+        const headers: HeadersInit = {};
+        if (apiKey) {
+          headers['X-API-Key'] = apiKey;
+        }
+
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/places/autocomplete?input=${encodeURIComponent(searchQuery)}`
+          `${apiBase}/places/autocomplete?input=${encodeURIComponent(searchQuery)}`,
+          { headers }
         );
         if (response.ok) {
           const data = await response.json();
-          setSuggestions(data.predictions || []);
-          setShowDropdown(true);
+          const preds = data.predictions || [];
+          setSuggestions(preds);
+          setShowDropdown(preds.length > 0);
+          setFetchError(false);
+        } else {
+          setSuggestions([]);
+          setShowDropdown(false);
+          setFetchError(true);
         }
       } catch {
-        // Backend unavailable — silently clear suggestions
+        setSuggestions([]);
+        setShowDropdown(false);
+        setFetchError(true);
       } finally {
         setIsLoading(false);
       }
-    }, 300);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [value, contextQuery, isFocused]);
@@ -102,10 +122,12 @@ export default function RestaurantAutocomplete({
   function handleSelectPlace(placeId: string, description: string) {
     setShowDropdown(false);
     setSuggestions([]);
+    setFetchError(false);
 
     const mainText = description.split(',')[0].trim();
     const addressParts = description.split(',').slice(1).map(s => s.trim()).join(', ');
 
+    onChange(mainText);
     onPlaceSelect?.({
       place_id: placeId,
       name: mainText,
@@ -146,8 +168,8 @@ export default function RestaurantAutocomplete({
           onKeyDown={handleKeyDown}
           onFocus={() => setIsFocused(true)}
           onBlur={() => {
-            // Delay to allow click on suggestion
-            setTimeout(() => setIsFocused(false), 200);
+            // Delay so mousedown on a suggestion can fire first (mobile/desktop)
+            setTimeout(() => setIsFocused(false), 300);
           }}
           disabled={isDisabled}
           placeholder={placeholder}
@@ -179,7 +201,12 @@ export default function RestaurantAutocomplete({
         )}
       </div>
 
-      {/* Dropdown */}
+      {fetchError && isFocused && value.trim().length >= 1 && !isLoading && (
+        <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+          Suggestions unavailable — you can still enter the name and location manually.
+        </p>
+      )}
+
       {showDropdown && suggestions.length > 0 && (
         <div className={`absolute z-50 w-full ${dropdownDirection === 'up' ? 'bottom-full mb-1' : 'mt-1'} bg-white dark:bg-[var(--dk-alt)] border border-gray-200 dark:border-[var(--dk-border)] rounded-lg shadow-lg max-h-60 overflow-y-auto`}>
           {suggestions.map((suggestion, index) => {
@@ -188,7 +215,9 @@ export default function RestaurantAutocomplete({
 
             return (
               <button
+                type="button"
                 key={suggestion.place_id}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelectPlace(suggestion.place_id, suggestion.description)}
                 className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-[var(--dk-tint)] transition-colors border-b border-gray-100 dark:border-[var(--dk-border)] last:border-b-0 ${
                   index === selectedIndex ? 'bg-gray-50 dark:bg-[var(--dk-tint)]' : ''

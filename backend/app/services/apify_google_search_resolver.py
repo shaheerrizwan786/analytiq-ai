@@ -5,6 +5,7 @@ import logging
 from apify_client import ApifyClient
 
 from app.config import get_settings
+from app.services.apify_runner import call_actor_sync
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,13 @@ def resolve_tripadvisor_url_from_apify_search(
         }
 
         logger.info(f"Running Apify Google Search for Tripadvisor: {query}")
-        run = client.actor("apify/google-search-scraper").call(run_input=run_input)
+        run = call_actor_sync(
+            client,
+            settings.apify_google_search_actor_id,
+            settings=settings,
+            profile="google_search",
+            run_input=run_input,
+        )
 
         # Get results from dataset
         items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
@@ -135,7 +142,13 @@ def resolve_yelp_url_from_apify_search(
         }
 
         logger.info(f"Running Apify Google Search for Yelp: {query}")
-        run = client.actor("apify/google-search-scraper").call(run_input=run_input)
+        run = call_actor_sync(
+            client,
+            settings.apify_google_search_actor_id,
+            settings=settings,
+            profile="google_search",
+            run_input=run_input,
+        )
 
         # Get results from dataset
         items = list(client.dataset(run["defaultDatasetId"]).iterate_items())

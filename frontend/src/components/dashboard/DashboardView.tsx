@@ -20,6 +20,7 @@ import { useAppMode } from '@/lib/modeContext';
 export interface DashboardData {
   restaurantName: string;
   location: string;
+  googlePlaceId?: string;
   totalReviews: number;
   sentiment: { positive: number; neutral: number; negative: number };
   topIssue: {
@@ -210,6 +211,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
             onClose={() => setChatOpen(false)}
             restaurantName={data.restaurantName}
             location={data.location}
+            googlePlaceId={data.googlePlaceId}
             topIssues={topIssues}
             recommendations={recTexts}
           />
@@ -225,6 +227,7 @@ export default function DashboardView({ data, onBack }: DashboardViewProps) {
           onClose={() => setChatOpen(false)}
           restaurantName={data.restaurantName}
           location={data.location}
+          googlePlaceId={data.googlePlaceId}
           topIssues={topIssues}
           recommendations={recTexts}
         />

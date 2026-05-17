@@ -6,6 +6,7 @@ from apify_client import ApifyClient
 from apify_client.errors import ApifyApiError
 
 from app.config import Settings
+from app.services.apify_runner import call_actor_sync
 
 
 class YelpDiscoveryError(RuntimeError):
@@ -80,7 +81,11 @@ def discover_yelp_business_url(
     }
 
     try:
-        run = client.actor(settings.apify_yelp_discovery_actor_id).call(
+        run = call_actor_sync(
+            client,
+            settings.apify_yelp_discovery_actor_id,
+            settings=settings,
+            profile="discovery",
             run_input=run_input,
             wait_secs=settings.apify_wait_secs,
         )
