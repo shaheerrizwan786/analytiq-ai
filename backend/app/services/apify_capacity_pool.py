@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Callable
 
 from app.config import Settings, get_settings
+from app.services.apify_memory import memory_mbytes_for
 
 _pool: "ApifyCapacityPool | None" = None
 
@@ -19,11 +20,11 @@ def estimate_analysis_peak_memory_mb(settings: Settings) -> int:
 
     Typical overlap: Google reviews + TripAdvisor/Yelp URL search; later TA/Yelp review actors.
     """
-    peak = settings.apify_memory_google_reviews_mb
-    peak += settings.apify_memory_google_search_mb * 2
-    peak += settings.apify_memory_tripadvisor_reviews_mb
+    peak = memory_mbytes_for(settings, "google_maps_reviews")
+    peak += memory_mbytes_for(settings, "google_search") * 2
+    peak += memory_mbytes_for(settings, "tripadvisor_reviews")
     if settings.apify_yelp_enabled:
-        peak += settings.apify_memory_yelp_reviews_mb
+        peak += memory_mbytes_for(settings, "yelp_reviews")
     return peak
 
 

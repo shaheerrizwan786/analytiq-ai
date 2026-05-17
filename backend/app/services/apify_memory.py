@@ -16,6 +16,15 @@ MemoryProfile = Literal[
 ]
 
 
+def normalize_apify_memory_mbytes(value: int, *, minimum: int = 128, maximum: int = 8192) -> int:
+    """Apify requires memoryMbytes to be a power of two (512, 1024, 2048, …)."""
+    clamped = max(minimum, min(maximum, value))
+    power = 1
+    while power < clamped:
+        power *= 2
+    return max(minimum, min(maximum, power))
+
+
 def memory_mbytes_for(settings: Settings, profile: MemoryProfile) -> int:
     """Map workload shape to Apify Cloud ``memoryMbytes`` (runs on Apify, not Railway)."""
     table: dict[MemoryProfile, int] = {
@@ -26,7 +35,7 @@ def memory_mbytes_for(settings: Settings, profile: MemoryProfile) -> int:
         "yelp_reviews": settings.apify_memory_yelp_reviews_mb,
         "discovery": settings.apify_memory_discovery_mb,
     }
-    return table[profile]
+    return normalize_apify_memory_mbytes(table[profile])
 
 
 def memory_for_review_source(settings: Settings, source: str) -> int:

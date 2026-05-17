@@ -96,7 +96,7 @@ async def analyze_restaurant_stream(
                 f"{stored_count} reviews already collected — fetching newer reviews…",
             )
 
-            all_new_reviews = []
+        all_new_reviews = []
         dataset_urls: list[str] = []
         range_from_values = []
         range_to_values = []

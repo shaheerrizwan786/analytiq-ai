@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     # Apify Cloud actor memory (MB) — tune per workload size
     apify_memory_google_reviews_mb: int = Field(default=2048, ge=256, le=8192)
     apify_memory_google_places_mb: int = Field(default=1024, ge=256, le=4096)
-    apify_memory_tripadvisor_reviews_mb: int = Field(default=768, ge=256, le=4096)
+    apify_memory_tripadvisor_reviews_mb: int = Field(default=1024, ge=256, le=4096)
     apify_memory_yelp_reviews_mb: int = Field(default=512, ge=256, le=2048)
     apify_memory_google_search_mb: int = Field(default=256, ge=128, le=1024)
     apify_memory_discovery_mb: int = Field(default=512, ge=256, le=2048)

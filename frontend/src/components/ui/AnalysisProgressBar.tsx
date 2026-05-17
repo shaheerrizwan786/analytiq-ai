@@ -70,7 +70,7 @@ export default function AnalysisProgressBar({
 
   const getStatusText = (stage: ProgressStage, status: StageStatus) => {
     if (status === 'completed') return 'Completed';
-    if (status === 'failed') return 'No page found';
+    if (status === 'failed') return 'Failed';
     if (status === 'skipped') return 'Skipped';
     if (status === 'started') return 'Searching...';
     return 'Waiting...';
